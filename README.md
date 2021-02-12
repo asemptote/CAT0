@@ -26,6 +26,6 @@ Python 2 or 3
     
 ## Dependencies:
 - [`constructible.py`](https://github.com/leovt/constructible): To use a different underlying constructible number object, simply
-        change what constrsphtrig.sqrt refers to after importing. (If
+        change what `constrsphtrig.sqrt` refers to after importing. (If
         `constructible.py` is not available create a file with stub variables
         `sqrt` and `Constructible`.)
