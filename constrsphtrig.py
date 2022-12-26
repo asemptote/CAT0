@@ -30,9 +30,7 @@ Dependencies:
         `sqrt` and `Constructible`.)
 """
 
-from __future__ import absolute_import
-from __future__ import division  # so that the / operator uses __truediv__
-from __future__ import print_function
+import math
 
 from ast import literal_eval
 from numbers import Real
@@ -41,6 +39,7 @@ from numbers import Real
 from constructible import sqrt as sqrt2
 from constructible import Constructible
 
+counter = 0
 
 def simplify(self):
     """Simplifies the internal representation of Constructible(..) numbers.
@@ -62,6 +61,10 @@ def simplify(self):
         return simplify(self.a) + simplify(self.b) * sqrt2(simplify(self.r))
 
 
+#import sage.all
+#import sage.rings.qqbar as qqbar
+#AA = qqbar.AA
+
 def sqrt(n):
     """Bugfix wrapper for .constructible.sqrt(n).
     
@@ -69,6 +72,8 @@ def sqrt(n):
     constructible.sqrt(..) on Constructible(..) numbers whose internal
     representations are not sufficiently simplified.
     """
+    if isinstance(n, float): return math.sqrt(n)
+#    return AA(n).sqrt()
     return sqrt2(simplify(n))
 
 def acos(cos):
@@ -89,13 +94,15 @@ class ConstrAngle(Real):
         cos (Constructible): cos(theta).
     """
     
-    def __init__(self, sgn=1, cos=sqrt(1)):
+    def __init__(self, sgn=1, cos=sqrt(1), exact=True):
         # Regard -acos(1) as equal to acos(1).
         self.sgn = 1 if cos == 1 else sgn
         # Keep the internal representation as simple as possible (expected to
         # be faster than comparing different representations of the same
         # constructible number with complex structures)
-        self.cos = (-1 if cos < 0 else 1) * sqrt(cos*cos)
+        self.cos = ((-1 if cos < 0 else 1) * sqrt(cos*cos)
+                    if exact else float(cos))
+        self.exact = exact
     
     @property
     def sin(self):
@@ -133,15 +140,15 @@ class ConstrAngle(Real):
         cos1, sin1 = self.cos_sin
         cos2, sin2 = other.cos_sin
         return ConstrAngle(-1 if sin1*cos2 + cos1*sin2 < 0 else 1,
-                           cos1*cos2 - sin1*sin2)
+                           cos1*cos2 - sin1*sin2, self.exact)
     
     def __truediv__(self, other):
         """Divides by 2, where -pi <= self <= pi."""
-        if other == 2: return ConstrAngle(self.sgn, sqrt((1+self.cos)/2))
+        if other == 2: return ConstrAngle(self.sgn, sqrt((1+self.cos)/2), self.exact)
         return NotImplemented
     
     def __neg__(self):
-        return ConstrAngle(-self.sgn, self.cos)
+        return ConstrAngle(-self.sgn, self.cos, self.exact)
     
     def __lt__(self, other):
         """Returns self < other, where -pi <= self, other <= pi."""
@@ -154,14 +161,19 @@ class ConstrAngle(Real):
     
     def __eq__(self, other):
         if not isinstance(other, ConstrAngle): return NotImplemented
-        return (self.sgn == other.sgn) and (self.cos == other.cos)
+        return (self.sgn == other.sgn) and (self.cos == other.cos
+                                            if self.exact else
+                                            math.isclose(self, other))
     
     def __abs__(self):
-        return ConstrAngle(1, self.cos)
+        return ConstrAngle(1, self.cos, self.exact)
+    
+    def __float__(self):
+        return self.sgn*math.acos(self.cos)
     
     # Satisfy the numbers.Real abstract base class requirements.
     # This is safe since the executed strings are static.
-    for f in """__div__, __float__, __floordiv__, __mod__, __mul__, __pos__,
+    for f in """__div__, __floordiv__, __mod__, __mul__, __pos__,
                 __pow__, __radd__, __rdiv__, __rfloordiv__, __rmod__, __rmul__,
                 __rpow__, __rtruediv__, __trunc__,
                 __ceil__, __floor__, __round__""".split():
@@ -319,8 +331,9 @@ class ConstrSphPoint(object):
             lon_e: The longitude of the point on the equator about which the
                    angle is computed.
         """
-        if self in (ConstrSphPoint(lon=lon_e), ConstrSphPoint(lon=lon_e+pi)):
-            raise ValueError(self, lon_e)
+#        if self in (ConstrSphPoint(lon=lon_e), ConstrSphPoint(lon=lon_e+pi)):
+#            raise ValueError(self, lon_e)
+        assert self not in (ConstrSphPoint(lon=lon_e), ConstrSphPoint(lon=lon_e+pi))
         lat, lon = self
         D_lon = lon - lon_e
         cos_ang = lat.cos * D_lon.sin / ConstrAngle(cos=lat.cos*D_lon.cos).sin
@@ -340,6 +353,7 @@ class ConstrSphPoint(object):
                       'snap' the point back onto the equator using the output
                       of ConstrSphPoint.ang(..) as theta.
         """
+#        print('rotate')
         if not axis: axis = zero_zero
         cos_theta = theta.cos
         sin_theta = ConstrAngle(theta.sgn if forwards else -theta.sgn,
@@ -353,6 +367,7 @@ class ConstrSphPoint(object):
         v_rot = tuple(v[i]*cos_theta + kXv[i]*sin_theta + k[i]*v_rot3
                       for i in range(3))  # Rodrigues formula
         cos_lat_rot = sqrt(1 - v_rot[2]*v_rot[2])
+#        print(v_rot[2])
         lat = ConstrAngle(-1 if v_rot[2]<0 else 1, cos_lat_rot)
         lon = ConstrAngle(-1 if v_rot[1]<0 else 1, # default to lon=0 if pole
                           v_rot[0]/cos_lat_rot if cos_lat_rot else 1)
@@ -423,11 +438,18 @@ class ConstrSphPoint(object):
         return tuple(ConstrSphPoint(lat_c, lon_c)
                      for lat_c, lon_c in zip(lats_c, lons_c))
     
-    def dist(self, other):
+    def dist(self, other, exact=True):
+        if not exact:  # dist can be expensive for exact values
+            self_lon = ConstrAngle(*self.lon, exact=False)
+            other_lon = ConstrAngle(*other.lon, exact=False)
+            return ConstrAngle(1,
+                float(self.lat.sin)*float(other.lat.sin)
+                    + float(self.lat.cos)*float(other.lat.cos)*(self_lon-other_lon).cos,
+                exact=False)
         # https://en.wikipedia.org/wiki/Great-circle_distance
-        return ConstrAngle(1, self.lat.sin*other.lat.sin
-                           + self.lat.cos*other.lat.cos*(self.lon-other.lon).cos
-                           )
+        return ConstrAngle(1,
+            self.lat.sin*other.lat.sin
+                + self.lat.cos*other.lat.cos*(self.lon-other.lon).cos)
     
     def __getitem__(self, items):
         if items==0: return self.lat
