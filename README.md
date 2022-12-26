@@ -2,6 +2,8 @@
 
 A Python implementation of Elder and McCammond's method to check Gromov's link condition for vertices
 
+Extensive documentation in code files
+
 ## Requirements
 Python 3, Regina (regina-normal) 7
     
