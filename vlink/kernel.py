@@ -43,7 +43,7 @@ from fractions import Fraction
 
 import regina
 
-from .field import MQ
+from .field import MQ, Tower
 
 ONE, ZERO = MQ.rational(1), MQ()
 CERT_FORMAT = 'vlink-certificate/1'
@@ -70,12 +70,12 @@ class AngleSum:
         self.re, self.im, self.h = ONE, ZERO, 0
 
     def add(self, a, b2):
-        if any(s != 1 for s in b2.t):
-            raise Reject('unsupported: sin^2 not rational (irrational link field)')
-        q = b2.t.get(1, Fraction(0))
-        if q < 0:
+        if b2.sign() < 0:
             raise Reject('negative sin^2')
-        b = MQ.sqrt_rational(q)
+        if all(s == 1 for s in b2.t):
+            b = MQ.sqrt_rational(b2.t.get(1, Fraction(0)))     # stays in F
+        else:
+            b = Tower.sqrt_field(b2)                            # irrational link field
         if a.is_zero() and b.is_zero():
             raise Reject('angle between degenerate vectors')
         self.re, self.im = self.re * a - self.im * b, self.re * b + self.im * a

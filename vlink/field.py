@@ -6,9 +6,10 @@ roots of distinct square-free integers are linearly independent over Q, so
 
   * equality / zero tests are exact coefficient comparisons, and
   * signs are decided exactly: a float estimate with an error bound settles
-    almost every case; otherwise x = A + B*sqrt(p) is split on a prime p and
-    sign(A + B sqrt p) follows from sign(A), sign(B) and sign(A^2 - p B^2),
-    recursively in fewer primes.
+    almost every case; otherwise x = A + B*sqrt(p) is split on a square-free
+    p > 1 that divides or is coprime to every key (_splitter: gcd refinement,
+    no factoring), and sign(A + B sqrt p) follows from sign(A), sign(B) and
+    sign(A^2 - p B^2), recursively with p eliminated.
 
 This replaces the nested-radical Constructible numbers of constructible.py:
 in the vertex-link computations every coordinate lives in one fixed field of
@@ -28,10 +29,20 @@ def _fsqrt(s):
     return r
 
 
+_SQF_CACHE = {}
+
+
 def squarefree_split(n):
-    """n = k^2 * s with s square-free; returns (k, s). n is a positive int."""
-    k, s, p = 1, 1, 2
-    while p * p <= n:
+    """n = k^2 * s with s square-free; returns (k, s). n is a positive int.
+
+    Trial division only up to the cube root of n: what remains then has at
+    most two prime factors, both larger than that, so it is either a perfect
+    square p^2 (detected exactly with isqrt) or square-free."""
+    r = _SQF_CACHE.get(n)
+    if r is not None:
+        return r
+    n0, k, s, p = n, 1, 1, 2
+    while p * p * p <= n:
         e = 0
         while n % p == 0:
             n //= p
@@ -40,16 +51,28 @@ def squarefree_split(n):
         if e % 2:
             s *= p
         p += 1 if p == 2 else 2
-    return k, s * n
+    q = isqrt(n)
+    if q * q == n:
+        k *= q
+    else:
+        s *= n
+    r = _SQF_CACHE[n0] = (k, s)
+    return r
 
 
-def _smallest_prime(n):
-    p = 2
-    while p * p <= n:
-        if n % p == 0:
-            return p
-        p += 1 if p == 2 else 2
-    return n
+def _splitter(keys):
+    """A square-free s > 1 such that every key is divisible by s or coprime to
+    it (keys: square-free integers, some > 1). Found by gcd refinement; no
+    factoring needed."""
+    s = next(k for k in keys if k != 1)
+    changed = True
+    while changed:
+        changed = False
+        for k in keys:
+            g = gcd(s, k)
+            if 1 < g < s:
+                s, changed = g, True
+    return s
 
 
 class MQ:
@@ -81,6 +104,8 @@ class MQ:
 
     # -- arithmetic --------------------------------------------------------
     def __add__(self, other):
+        if isinstance(other, Tower):
+            return NotImplemented
         if not isinstance(other, MQ):
             other = MQ.rational(other)
         t = dict(self.t)
@@ -98,12 +123,16 @@ class MQ:
         return MQ({s: -c for s, c in self.t.items()})
 
     def __sub__(self, other):
+        if isinstance(other, Tower):
+            return NotImplemented
         return self + (-other if isinstance(other, MQ) else MQ.rational(-Fraction(other)))
 
     def __rsub__(self, other):
         return MQ.rational(other) - self
 
     def __mul__(self, other):
+        if isinstance(other, Tower):
+            return NotImplemented
         if not isinstance(other, MQ):
             q = Fraction(other)
             return MQ({s: c * q for s, c in self.t.items()} if q else {})
@@ -122,7 +151,8 @@ class MQ:
     __rmul__ = __mul__
 
     def conj(self, p):
-        """Galois conjugate sqrt(p) -> -sqrt(p) for a prime p."""
+        """Galois conjugate sqrt(p) -> -sqrt(p), for p as returned by
+        _splitter (every key divisible by p or coprime to it)."""
         return MQ({s: (-c if s % p == 0 else c) for s, c in self.t.items()})
 
     def inverse(self):
@@ -130,10 +160,9 @@ class MQ:
             raise ZeroDivisionError('MQ zero')
         num, den = MQ({1: Fraction(1)}), self
         while True:
-            primes = [s for s in den.t if s != 1]
-            if not primes:
+            if all(s == 1 for s in den.t):
                 return num * (1 / den.t[1])
-            p = _smallest_prime(primes[0])
+            p = _splitter(list(den.t))
             c = den.conj(p)
             num, den = num * c, den * c
 
@@ -184,7 +213,7 @@ class MQ:
             return 0
         if all(s == 1 for s in t):
             return 1 if t[1] > 0 else -1
-        p = _smallest_prime(next(s for s in t if s != 1))
+        p = _splitter(list(t))
         A = MQ({s: c for s, c in t.items() if s % p})
         B = MQ({s // p: c for s, c in t.items() if s % p == 0})
         sa, sb = A.sign(), B.sign()
@@ -219,3 +248,153 @@ class MQ:
 
 ZERO = MQ()
 ONE = MQ.rational(1)
+
+
+# --------------------------------------------------------------------- towers
+#
+# For generic edge lengths the sine of an angle is sqrt(b2) with b2 in the
+# link's multiquadratic field F but not rational. A Tower element is
+#     sum over sets K of symbols:  c_K * prod_{i in K} sqrt(r_i)
+# with c_K in F and radicands r_i > 0 in F (registered globally, one symbol
+# per distinct radicand). Products reduce with sqrt(r_i)^2 = r_i.
+#
+# The representation need not be unique (radicands may be algebraically
+# related, e.g. sqrt(2+sqrt3) * sqrt(2-sqrt3) = 1), so equality and zero
+# tests go through the sign, which is exact: rigorous interval arithmetic
+# first, and otherwise split on one symbol, x = A + B sqrt(r), with
+# sign x = sign(A) * sign(A^2 - r B^2) when A, B have opposite signs.
+
+_RADICANDS = []          # i -> radicand r_i (an MQ, > 0)
+_RADICAND_INDEX = {}     # MQ -> i
+_U = 2.3e-16             # unit roundoff (with margin)
+
+
+def _mq_interval(x):
+    """Rigorous float interval containing the field element x."""
+    v = float(x)
+    e = (len(x.t) + 2) * _U * sum(abs(float(c)) * fsqrt(s) for s, c in x.t.items()) + 1e-300
+    return v - e, v + e
+
+
+def _imul(a, b):
+    ps = (a[0] * b[0], a[0] * b[1], a[1] * b[0], a[1] * b[1])
+    lo, hi = min(ps), max(ps)
+    m = 4 * _U * max(abs(lo), abs(hi))
+    return lo - m, hi + m
+
+
+class Tower:
+    __slots__ = ('t',)
+
+    def __init__(self, terms=None):
+        self.t = {k: c for k, c in terms.items() if not c.is_zero()} if terms else {}
+
+    @staticmethod
+    def lift(x):
+        if isinstance(x, Tower):
+            return x
+        if not isinstance(x, MQ):
+            x = MQ.rational(x)
+        return Tower({frozenset(): x})
+
+    @staticmethod
+    def sqrt_field(r):
+        """sqrt(r) for r >= 0 in F: exact in F when r is rational, otherwise a
+        new (or reused) symbol."""
+        if r.sign() < 0:
+            raise ValueError('sqrt of a negative field element')
+        if r.is_zero():
+            return Tower()
+        if all(s == 1 for s in r.t):
+            return Tower.lift(MQ.sqrt_rational(r.t[1]))
+        key = frozenset(r.t.items())
+        i = _RADICAND_INDEX.get(key)
+        if i is None:
+            i = _RADICAND_INDEX[key] = len(_RADICANDS)
+            _RADICANDS.append(r)
+        return Tower({frozenset((i,)): ONE})
+
+    def __add__(self, other):
+        other = Tower.lift(other)
+        t = dict(self.t)
+        for k, c in other.t.items():
+            v = t.get(k, ZERO) + c
+            if v.is_zero():
+                t.pop(k, None)
+            else:
+                t[k] = v
+        return Tower(t)
+
+    __radd__ = __add__
+
+    def __neg__(self):
+        return Tower({k: -c for k, c in self.t.items()})
+
+    def __sub__(self, other):
+        return self + (-Tower.lift(other))
+
+    def __rsub__(self, other):
+        return Tower.lift(other) - self
+
+    def __mul__(self, other):
+        other = Tower.lift(other)
+        t = {}
+        for k1, c1 in self.t.items():
+            for k2, c2 in other.t.items():
+                c = c1 * c2
+                for i in k1 & k2:
+                    c = c * _RADICANDS[i]
+                k = k1 ^ k2
+                v = t.get(k, ZERO) + c
+                if v.is_zero():
+                    t.pop(k, None)
+                else:
+                    t[k] = v
+        return Tower(t)
+
+    __rmul__ = __mul__
+
+    def _interval(self):
+        lo = hi = 0.0
+        sq = {}
+        for k, c in self.t.items():
+            iv = _mq_interval(c)
+            for i in k:
+                if i not in sq:
+                    rl, rh = _mq_interval(_RADICANDS[i])
+                    sq[i] = (fsqrt(max(rl, 0.0)) * (1 - _U), fsqrt(max(rh, 0.0)) * (1 + _U))
+                iv = _imul(iv, sq[i])
+            lo, hi = lo + iv[0], hi + iv[1]
+        m = (len(self.t) + 1) * _U * max(abs(lo), abs(hi))
+        return lo - m, hi + m
+
+    def sign(self):
+        if not self.t:
+            return 0
+        lo, hi = self._interval()
+        if lo > 0:
+            return 1
+        if hi < 0:
+            return -1
+        syms = set().union(*self.t)
+        if not syms:
+            return self.t.get(frozenset(), ZERO).sign()
+        i = max(syms)
+        A = Tower({k: c for k, c in self.t.items() if i not in k})
+        B = Tower({k - {i}: c for k, c in self.t.items() if i in k})
+        sa, sb = A.sign(), B.sign()
+        if sb == 0:
+            return sa
+        if sa == 0 or sa == sb:
+            return sb if sa == 0 else sa
+        return sa * (A * A - B * B * _RADICANDS[i]).sign()
+
+    def is_zero(self):
+        return self.sign() == 0
+
+    def __float__(self):
+        lo, hi = self._interval()
+        return (lo + hi) / 2
+
+    def __repr__(self):
+        return 'Tower(%s)' % ', '.join('%s*%s' % (c, sorted(k)) for k, c in self.t.items())

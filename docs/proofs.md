@@ -51,13 +51,31 @@ rational c_s. Square roots of distinct square-free integers are linearly
 independent over ℚ, so the representation is unique and `is_zero` (no stored
 terms) is exact.
 
-**Sign.** For x with a term involving a prime p, write x = A + B√p with A, B
-free of √p. If B = 0 then sign x = sign A; if A = 0 then sign x = sign B; if
-sign A = sign B that is the sign. Otherwise A − B√p has the sign of A, and
-x(A − B√p) = A² − pB², so sign x = sign A · sign(A² − pB²). Each recursion
-removes p, so it terminates. The float pre-check returns a sign only if
+**Sign.** Pick a square-free p > 1 such that every key is divisible by p or
+coprime to it (`_splitter`: start from a key ≠ 1 and replace p by gcd(p, k)
+while some gcd lies strictly between 1 and p; no factoring). Write
+x = A + B√p, A collecting the keys coprime to p and B the others divided by
+p; A and B are free of √p. If B = 0 then sign x = sign A; if A = 0 then
+sign x = sign B; if sign A = sign B that is the sign. Otherwise A − B√p has
+the sign of A, and x(A − B√p) = A² − pB², so sign x = sign A · sign(A² − pB²).
+Products of keys keep the divisible-or-coprime property, so A² − pB² is free
+of √p and the recursion terminates. The same p gives the conjugation
+√p ↦ −√p used by `inverse`. The float pre-check returns a sign only if
 |est| > 10⁻⁹ · Σ|terms|; the float error is at most (k+2)·2.3·10⁻¹⁶·Σ|terms|
 for k terms, which is smaller whenever k < 4·10⁶.
+
+**Square-free parts.** `squarefree_split(n)` trial-divides only by primes p
+with p³ ≤ n; the remaining cofactor m has no prime factor below n^{1/3}, so
+it has at most two prime factors: it is p² (detected exactly by isqrt) or
+square-free.
+
+**Towers.** For irrational link fields, √(b²) with b² ∈ F not rational is a
+new symbol √r (r > 0 in F). Tower elements are F-combinations of products of
+such symbols, reduced by √r² = r. Their sign is decided by rigorous interval
+arithmetic (each float error bounded from the magnitudes of the exact parts)
+or, when the interval contains 0, by splitting on one symbol exactly as above
+(it needs only r > 0). Equality is decided through the sign, so it is exact
+even when symbols are algebraically related.
 
 **AngleSum.** An angle θ ∈ [0, π] is given by exact a, b² with b ≥ 0 and
 (a, b) ≠ 0, so a + ib is a positive multiple of e^{iθ}. Invariant: z is a
@@ -66,8 +84,7 @@ positive multiple of e^{iΘ} with Θ ∈ [hπ, (h+1)π). After adding θ,
 < 0 iff Θ' ∈ ((h+1)π, (h+2)π), and when sin Θ' = 0, Θ' = hπ iff s·cos Θ' > 0.
 So h is updated exactly; "total ≥ kπ" is h ≥ k. Two sums with equal h differ
 by less than π, so the sign of Im(z̄₁z₂) decides their order (`angle_leq`).
-b = √(b²) is exact when b² is rational (otherwise the kernel rejects:
-unsupported).
+b = √(b²) is exact: in F when b² is rational, as a tower symbol otherwise.
 
 ## 2. Link geometry (kernel.Geometry, Link, step)
 
