@@ -19,7 +19,7 @@ from .link import VertexLink
 from .necklace import search
 
 
-def vertex_linkcond(isosig, sqlens, findall=False, allow_repeats=True):
+def vertex_linkcond(isosig, sqlens, findall=False, allow_repeats=True, stop_at_start=False):
     """allow_repeats (default) lets beads and necklaces reuse link triangles.
     gallery.py forbids reuse, an unproven assumption; on every validation
     input both settings give the same answers, and with the pruned search
@@ -30,7 +30,8 @@ def vertex_linkcond(isosig, sqlens, findall=False, allow_repeats=True):
     for i_v in range(T.countVertices()):
         link = VertexLink(T, i_v, sqlens)
         beads = all_beads(link, allow_repeats)
-        res = search(link, beads, findall=findall, allow_repeats=allow_repeats)
+        res = search(link, beads, findall=findall, allow_repeats=allow_repeats,
+                     stop_at_start=stop_at_start)
         if findall:
             allfound += [(i_v, n) for n in res]
         elif res:

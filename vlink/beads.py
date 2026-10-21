@@ -28,9 +28,17 @@ import math
 from .link import Strip
 
 
+def _ferr(x):
+    """Bound on |float(x) - x| for a field element x = sum c_s sqrt(s): each
+    term is rounded (float(c), sqrt) with relative error <= 2.3e-16 and the
+    summation of k terms adds at most k * 1.2e-16 * sum |terms|."""
+    k = len(x.t)
+    return (k + 2) * 2.3e-16 * sum(abs(float(c)) * math.sqrt(s) for s, c in x.t.items())
+
+
 class Bead:
     __slots__ = ('ts', 'start', 'end', 'strip', 'S', 'E', 'cos2', 'cos_sign',
-                 'length', 'pi_range')
+                 'length', 'length_err', 'pi_range')
 
     def __init__(self, strip, start, end, S, E, pi_range=None):
         self.ts = strip.ts
@@ -40,8 +48,20 @@ class Bead:
         self.cos_sign = se.sign()
         self.cos2 = (se * se) / (ss * ee)          # exact cos^2 of the length
         self.pi_range = pi_range
-        c = float(se) / math.sqrt(float(ss) * float(ee))
-        self.length = math.pi if pi_range else math.acos(max(-1.0, min(1.0, c)))
+        if pi_range:
+            self.length, self.length_err = math.pi, 1e-15
+            return
+        fss, fee = float(ss), float(ee)
+        den = math.sqrt(fss * fee)
+        c = float(se) / den
+        self.length = math.acos(max(-1.0, min(1.0, c)))
+        # Rigorous bound on the float error of `length`: dc bounds the error of
+        # c (numerator error / den, relative errors of ss and ee, and the
+        # rounding of sqrt and division); |acos x - acos y| <= 1.6 sqrt(|x - y|)
+        # on [-1, 1] turns it into an error bound for the angle.
+        dc = (_ferr(se) / den + abs(c) * (_ferr(ss) / fss + _ferr(ee) / fee)
+              + 1e-15)
+        self.length_err = min(math.pi, 1.6 * math.sqrt(dc))
 
     def key(self):
         return (self.ts, self.start, self.end)

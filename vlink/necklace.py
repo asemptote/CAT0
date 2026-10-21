@@ -122,11 +122,22 @@ class Junctions:
         raise RuntimeError('fan walk around link vertex did not reach the outgoing triangle')
 
 
-def search(link, beads, findall=False, allow_repeats=False):
+def search(link, beads, findall=False, allow_repeats=False, stop_at_start=False):
     """Returns a necklace (list of beads) or None; with findall, a list of all
     necklaces found (each as a list of beads). allow_repeats lets different
     beads of a necklace share link triangles (beads themselves are never
-    reused: a closed geodesic traversing a bead twice covers a shorter one)."""
+    reused: a closed geodesic traversing a bead twice covers a shorter one).
+
+    stop_at_start=True reproduces gallery.py's rule of never extending a path
+    that has returned to its starting link vertex (an unproven assumption that
+    short loops never pass through their start twice); by default such paths
+    are extended.
+
+    Length comparisons with 2*pi are rigorous: every bead carries a bound
+    length_err on the float error of its length; a comparison is decided in
+    floating point only when the error interval excludes 2*pi, otherwise
+    exactly (cmp_two_pi). Distance bounds use lengths minus errors, so they
+    are guaranteed underestimates."""
     J = Junctions(link)
     by_start = {}
     for i, b in enumerate(beads):
@@ -135,13 +146,14 @@ def search(link, beads, findall=False, allow_repeats=False):
         js.sort(key=lambda j: beads[j].length)   # short beads first
     found = []
     # Lower bounds for pruning: shortest bead-path length between link
-    # vertices, ignoring junction conditions (so it never cuts a valid loop).
+    # vertices, ignoring junction conditions (so it never cuts a valid loop),
+    # from certified lower bounds of the bead lengths.
     nv = link.n_vertices
     INF = float('inf')
     dist = [[0.0 if x == y else INF for y in range(nv)] for x in range(nv)]
     for b in beads:
         x, y = link.lv[b.ts[0]][b.start], link.lv[b.ts[-1]][b.end]
-        dist[x][y] = min(dist[x][y], b.length)
+        dist[x][y] = min(dist[x][y], max(0.0, b.length - b.length_err))
     for k in range(nv):
         dk = dist[k]
         for x in range(nv):
@@ -153,22 +165,24 @@ def search(link, beads, findall=False, allow_repeats=False):
                 if dxk + dk[y] < dx[y]:
                     dx[y] = dxk + dk[y]
 
-    def dfs(path, total, tris, has_pi):
+    def dfs(path, total, err, tris, has_pi):
         gm = beads[path[-1]]
         g0 = beads[path[0]]
         w = link.lv[gm.ts[-1]][gm.end]
-        if w == link.lv[g0.ts[0]][g0.start]:
+        s0 = link.lv[g0.ts[0]][g0.start]
+        if w == s0:
             neck = Necklace(beads[i] for i in path)
-            if gm.pi_range or g0.pi_range or any(b.pi_range for b in neck):
+            if any(b.pi_range for b in neck):
                 neck.pi_point = _pi_junctions(J, neck)
                 ok = neck.pi_point is not None
             else:
                 ok = J.ok(gm, g0)
             if ok:
                 found.append(neck)
-                return not findall
-            return False
-        s0 = link.lv[g0.ts[0]][g0.start]
+                if not findall:
+                    return True
+            if stop_at_start:
+                return False
         for j in by_start.get(w, ()):
             # each loop is searched only from its lowest-numbered bead
             if j <= path[0] or j in path:
@@ -176,27 +190,27 @@ def search(link, beads, findall=False, allow_repeats=False):
             b = beads[j]
             if has_pi and b.pi_range:
                 continue
-            new_total = total + b.length
-            # cannot get back to the start within 2*pi (with float slack)
-            if new_total + dist[link.lv[b.ts[-1]][b.end]][s0] > TWO_PI + EPS:
+            new_total, new_err = total + b.length, err + b.length_err
+            # certainly cannot get back to the start within 2*pi
+            if new_total - new_err + dist[link.lv[b.ts[-1]][b.end]][s0] > TWO_PI:
                 continue
-            if abs(new_total - TWO_PI) <= EPS:
-                # Near-tie: decide total < 2*pi exactly (see cmp_two_pi).
+            if new_total - new_err >= TWO_PI:
+                continue                       # certainly >= 2*pi
+            if new_total + new_err >= TWO_PI:  # undecided in floats: exact
                 if cmp_two_pi([beads[i] for i in path] + [b]) >= 0:
                     continue
-            elif new_total >= TWO_PI:
-                continue
             if not allow_repeats and tris & set(b.ts):
                 continue
             if not (gm.pi_range or b.pi_range):
                 if not J.ok(gm, b):
                     continue
-            if dfs(path + [j], new_total, tris | set(b.ts), has_pi or bool(b.pi_range)):
+            if dfs(path + [j], new_total, new_err, tris | set(b.ts),
+                   has_pi or bool(b.pi_range)):
                 return True
         return False
 
     for i, b in enumerate(beads):
-        if dfs([i], b.length, set(b.ts), bool(b.pi_range)):
+        if dfs([i], b.length, b.length_err, set(b.ts), bool(b.pi_range)):
             break
     if findall:
         return found
@@ -204,8 +218,8 @@ def search(link, beads, findall=False, allow_repeats=False):
 
 
 def cmp_two_pi(beads):
-    """Exact sign of (sum of bead lengths - 2*pi), for a sum known to be within
-    EPS of 2*pi.
+    """Exact sign of (sum of bead lengths - 2*pi), for a sum known to be close
+    to 2*pi (within the beads' float error bounds, far below pi/2).
 
     A bead of length theta in [0, pi] contributes the complex number
     a + i*b = |S||E| e^{i theta} with a = S.E and b = sqrt(|S|^2 |E|^2 - a^2) >= 0.

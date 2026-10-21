@@ -87,8 +87,15 @@ def run_vlink_repeats(isosig, sqlens):
     return vertex_linkcond(isosig, sqlens, allow_repeats=True)
 
 
+def run_vlink_stopstart(isosig, sqlens):
+    """vlink with gallery.py's rule of not extending paths past their start."""
+    from vlink.check import vertex_linkcond
+    return vertex_linkcond(isosig, sqlens, stop_at_start=True)
+
+
 IMPLS = dict(current=run_current, legacy2020=run_legacy2020, vlink=run_vlink,
-             vlink_norepeat=run_vlink_norepeat, vlink_repeats=run_vlink_repeats)
+             vlink_norepeat=run_vlink_norepeat, vlink_repeats=run_vlink_repeats,
+             vlink_stopstart=run_vlink_stopstart)
 
 
 def job(args):

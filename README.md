@@ -37,6 +37,12 @@ linkcond('gLLPQaceedffnkxknnn', [1, 2, 3, 1, 1, 2, 2])   # validity + edges + ve
 - Necklace search is pruned exactly (shortest bead-path bounds between link
   vertices; each loop searched once): worst validation input 9 s, against
   25–50 min for `gallery.py`.
+- No unproven search rules by default: paths returning to their start vertex
+  are extended (`gallery.py` stops there; `stop_at_start=True` reproduces it),
+  and every length comparison with 2π is rigorous (each bead carries a bound on
+  the float error of its length; inside the error window the comparison is
+  exact). On all 106 metrics checked so far, dropping either rule changes no
+  answer.
 - Requirements: Python ≥ 3.10, `regina` ≥ 7.4 (PyPI wheels: Linux/macOS).
 - Tests: `python tests/test_vlink_geometry.py`, `python tests/test_vlink_edges.py`.
 
