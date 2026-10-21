@@ -102,8 +102,37 @@ def run_linkcond(isosig, sqlens):
     return r
 
 
+def run_linkcond_nopi(isosig, sqlens):
+    """linkcond without beads of length exactly pi (Lemma 4.9 of EMM 2003)."""
+    from vlink.check import linkcond
+    r = linkcond(isosig, sqlens, pi_beads=False)
+    r.pop('necklace', None)
+    return r
+
+
+def _certified(isosig, sqlens, **kw):
+    """linkcond with certificates for True answers too; certificates are
+    summarised (size), not stored."""
+    import json as _json
+    from vlink.check import linkcond
+    r = linkcond(isosig, sqlens, certify=True, **kw)
+    r.pop('necklace', None)
+    cert = r.pop('certificate', None)
+    r['certificate_bytes'] = len(_json.dumps(cert)) if cert else 0
+    return r
+
+
+def run_linkcond_cert(isosig, sqlens):
+    return _certified(isosig, sqlens)
+
+
+def run_linkcond_cert_nopi(isosig, sqlens):
+    return _certified(isosig, sqlens, pi_beads=False)
+
+
 IMPLS = dict(current=run_current, legacy2020=run_legacy2020, vlink=run_vlink,
-             linkcond=run_linkcond,
+             linkcond=run_linkcond, linkcond_nopi=run_linkcond_nopi,
+             linkcond_cert=run_linkcond_cert, linkcond_cert_nopi=run_linkcond_cert_nopi,
              vlink_norepeat=run_vlink_norepeat, vlink_repeats=run_vlink_repeats,
              vlink_stopstart=run_vlink_stopstart)
 

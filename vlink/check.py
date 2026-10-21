@@ -30,16 +30,19 @@ class InternalError(Exception):
     """The search produced an answer the kernel does not confirm."""
 
 
-def vertex_linkcond(isosig, sqlens, findall=False, allow_repeats=True, stop_at_start=False):
+def vertex_linkcond(isosig, sqlens, findall=False, allow_repeats=True, stop_at_start=False,
+                    pi_beads=True):
     """allow_repeats (default) lets beads and necklaces reuse link triangles
     (gallery.py forbids reuse, an unproven assumption); stop_at_start=True
-    reproduces gallery.py's rule of never extending a path past its start."""
+    reproduces gallery.py's rule of never extending a path past its start.
+    pi_beads=False leaves out beads of length exactly pi: a True answer then
+    also relies on Elder-McCammond-Meier (2003) Lemma 4.9."""
     T = regina.Triangulation3.fromIsoSig(isosig)
     geo = kernel.Geometry(T, sqlens)
     allfound = []
     for i_v in range(T.countVertices()):
         link = VertexLink(T, i_v, sqlens, geo=geo)
-        beads = all_beads(link, allow_repeats)
+        beads = all_beads(link, allow_repeats, pi_beads)
         res = search(link, beads, findall=findall, allow_repeats=allow_repeats,
                      stop_at_start=stop_at_start)
         if findall:
@@ -53,7 +56,8 @@ def vertex_linkcond(isosig, sqlens, findall=False, allow_repeats=True, stop_at_s
     return dict(result=True)
 
 
-def linkcond(isosig, sqlens, allow_repeats=True, stop_at_start=False):
+def linkcond(isosig, sqlens, allow_repeats=True, stop_at_start=False, pi_beads=True,
+             certify=False, exact_only=False):
     """Full local CAT(0) test (Gromov's link condition): every tetrahedron
     valid, every edge link of length >= 2*pi, every vertex link without a
     short closed geodesic.
@@ -67,7 +71,9 @@ def linkcond(isosig, sqlens, allow_repeats=True, stop_at_start=False):
         r = dict(result=False, reason='edge', failing_edges=rep['failing_edges'])
     else:
         r = vertex_linkcond(isosig, sqlens, allow_repeats=allow_repeats,
-                            stop_at_start=stop_at_start)
+                            stop_at_start=stop_at_start, pi_beads=pi_beads)
+        if not pi_beads:
+            r['assumptions'] = ['Elder-McCammond-Meier 2003, Lemma 4.9']
         r.update(reason=None if r['result'] else 'vertex', flat=rep['flat'])
     r['certificate'] = _certificate(isosig, sqlens, r)
     r['verified'] = False
@@ -76,6 +82,16 @@ def linkcond(isosig, sqlens, allow_repeats=True, stop_at_start=False):
         if not ok:
             raise InternalError('kernel rejects the search result: %s' % msg)
         r['verified'], r['kernel'] = True, msg
+    elif certify:
+        # a True answer: shortest-path-tree certificate, checked by the kernel
+        from .certify import true_certificate
+        cert = true_certificate(isosig, sqlens, pi_beads=pi_beads, exact_only=exact_only)
+        ok, msg = kernel.check_true_certificate(cert, exact_only=exact_only)
+        r['certificate'] = cert
+        if ok:
+            r['verified'], r['kernel'] = True, msg
+        else:
+            r['certificate_error'] = msg
     return r
 
 
