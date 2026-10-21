@@ -63,6 +63,27 @@ class Bead:
               + 1e-15)
         self.length_err = min(math.pi, 1.6 * math.sqrt(dc))
 
+    # the view kernel.junction_side / kernel.total_length expect
+    @property
+    def pos(self):
+        return self.strip.pos
+
+    @property
+    def G(self):
+        return self.strip.G
+
+    @property
+    def pi(self):
+        return bool(self.pi_range)
+
+    @property
+    def in_dir(self):
+        return self.S
+
+    @property
+    def out_dir(self):
+        return self.E
+
     def key(self):
         return (self.ts, self.start, self.end)
 

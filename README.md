@@ -1,4 +1,12 @@
-# gallery.py
+# gallery.py (legacy)
+
+> **Legacy code path.** `gallery.py`, `constrsphtrig.py` and `constructible.py`
+> are superseded by `vlink/` (below) and kept only for reference and for
+> reproducing earlier results. They are no longer used to confirm answers:
+> `vlink` answers are checked by its own kernel and certificates. Known
+> limitations of the legacy code: nested-radical arithmetic (slow), and two
+> unproven search rules (no reused link triangles; paths never extended past
+> their start vertex) that `vlink` does not assume.
 
 A Python implementation of Elder and McCammond's method to check Gromov's link condition for vertices
 
@@ -54,14 +62,19 @@ tetrahedron, an edge whose dihedral angles sum to < 2π, or a necklace in a
 vertex link (beads with their link triangles, corners, strip gluing steps, and
 for a π-length bead the point fixing its geodesic).
 
-`certcheck.check_certificate(cert)` verifies a certificate exactly and
-independently of vlink's search. Its trusted base is `vlink/field.py` and
-Regina's combinatorics; it uses no floating point. Angles are summed as
-products of a + ib (a and b² exact) with an exact half-turn count, bead
-geodesics are checked with exact cone tests, and junction angles are summed
-from intrinsic corner angles. `tests/test_certificates.py`: every vlink
-certificate is accepted; all wrong ones tried (the 2020 code's witnesses,
-corrupted certificates) are rejected. `True` answers have no certificate yet.
+vlink is one implementation with a small trusted **kernel**
+(`vlink/kernel.py`, plus `vlink/field.py` and Regina's combinatorics). The
+kernel holds every geometric predicate: tetrahedron validity, dihedral and
+edge angle sums, link data and strip development, bead geodesics (exact cone
+tests), junction angles (sums of intrinsic corner angles) and length
+comparisons. It uses no floating point: angles are summed as products of
+a + ib (a and b² exact) with an exact half-turn count. The search modules
+(`beads.py`, `necklace.py`) only decide what to ask the kernel, and
+`linkcond` returns a `False` answer only after `kernel.check_certificate` has
+verified its certificate (`'verified': True`). `True` answers are not yet
+certified. `tests/test_certificates.py`: every certificate vlink produces is
+accepted; all wrong ones tried (the 2020 code's witnesses, corrupted
+certificates) are rejected.
 
 ## Validation
 

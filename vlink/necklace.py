@@ -5,31 +5,22 @@ such that at every junction (a link vertex W) the angle between the incoming
 and outgoing geodesics is >= pi on both sides, and whose total length is
 < 2*pi. Finding one shows the vertex link is not CAT(1) (Elder-McCammond).
 
-Junction angles are decided exactly: the triangles around W are developed
-(exactly, link.Strip) starting from the incoming bead's last triangle, and the
-sweep from the reversed incoming direction u to the outgoing direction x is
-tracked with orientation signs det(W, u, .). The sweep reaches pi exactly when
-a ray becomes opposite to u, an exact test, so the ties of flat metrics (angles
-exactly pi) are decided exactly.
+This module is search, not trust: every geometric decision is delegated to
+the kernel (kernel.junction_ok for junction angles, kernel.total_length for
+exact length comparisons), and any necklace it reports is re-checked by the
+kernel as a certificate before check.py returns it. What lives here is the
+search strategy: candidate order, pruning by certified float bounds and
+bead-path distances, canonical starting beads, and choosing a geodesic inside
+a pi-length bead's lune (_pi_feasible, whose result the kernel verifies).
 
-Lengths are arccos values. Sums are compared with 2*pi with a 1e-9 margin;
-inside the margin the tie is settled exactly when possible: a necklace whose
-junctions are all exactly straight is a great circle, of length exactly 2*pi.
-Otherwise UndecidedError is raised (never a silent guess).
-
-Beads of length exactly pi (a lune of geodesics, `Bead.pi_range`) are handled
-numerically for now: the geodesic inside the lune is a free angle, and the
-junction conditions at both ends become linear inequalities in it (floats,
-with near-ties reported as UndecidedError).
-
-Search order and pruning rules follow gallery.find_necklaces: start from each
-bead, extend by beads starting at the current end vertex, never reuse a bead
-or a link triangle, at most one pi-bead, stop extending once the necklace can
-close at its start vertex.
+Lengths are arccos values carried with certified float error bounds
+(Bead.length_err); a comparison with 2*pi is made in floats only when the
+error interval excludes 2*pi, otherwise exactly by the kernel.
 """
 
 import math
 
+from . import kernel
 from .link import Strip
 
 TWO_PI = 2 * math.pi
@@ -54,72 +45,22 @@ def _apply(P, coords):
 
 
 class Junctions:
-    """Exact junction tests between beads of one link, cached."""
+    """Junction tests between beads of one link: kernel.junction_ok, cached."""
 
     def __init__(self, link):
         self.link = link
         self.cache = {}
 
-    def sides(self, b_in, b_out):
-        """For the junction b_in -> b_out, returns a pair, one entry per side:
-        'ge' (sweep > pi), 'eq' (exactly pi) or 'lt' (< pi)."""
+    def ok(self, b_in, b_out):
         key = (id(b_in), id(b_out))
         r = self.cache.get(key)
         if r is None:
-            r = self.cache[key] = tuple(self._side(b_in, b_out, k) for k in (1, 2))
+            try:
+                r = kernel.junction_ok(self.link.k, b_in, b_out)
+            except kernel.Reject as e:
+                raise UndecidedError('junction: %s' % e)
+            self.cache[key] = r
         return r
-
-    def ok(self, b_in, b_out):
-        return all(s != 'lt' for s in self.sides(b_in, b_out))
-
-    def straight(self, b_in, b_out):
-        return 'eq' in self.sides(b_in, b_out)
-
-    def _side(self, b_in, b_out, k):
-        link = self.link
-        tm, rm = b_in.ts[-1], b_in.end
-        t0, d0 = b_out.ts[0], b_out.start
-        P = b_in.strip.pos[-1]
-        fan = Strip.__new__(Strip)
-        fan.link, fan.ts, fan.pos, fan.frame = link, (tm,), (P,), b_in.strip.frame
-        fan.steps = ()
-        W, u = P[rm], b_in.S
-        d = (rm + k) % 3
-        y = 3 - rm - d
-        o = Strip.det(W, P[d], P[y]).sign()
-
-        def state(ray):
-            s = o * Strip.det(W, u, ray).sign()
-            if s > 0:
-                return 'before'
-            if s < 0:
-                return 'after'
-            return 'eq' if _tangent_dot_sign(fan, W, u, ray) < 0 else 'zero'
-
-        # Walk the fan around W. In each triangle (t, corner c of W) the sweep
-        # enters through the ray at vertex `ent` and leaves through the ray at
-        # vertex `ex`, then crosses the edge {W, ex} (opposite `ent`).
-        t, c, ent, ex = tm, rm, d, y
-        if (t, c) == (t0, d0):
-            X = _apply(P, b_out.E)
-            # outgoing ray inside this same corner, between u and ray(ex)?
-            if o * Strip.det(W, u, X).sign() > 0 and o * Strip.det(W, X, P[ex]).sign() >= 0:
-                return 'lt'
-            # outgoing ray equal to u: the geodesic turns back (angle 0)
-            if Strip.det(W, u, X).is_zero() and _tangent_dot_sign(fan, W, u, X) > 0:
-                return 'lt'
-        for _ in range(4 * link.n + 2):
-            st = state(fan.pos[-1][ex])
-            if st in ('after', 'eq'):
-                return 'ge' if st == 'after' else 'eq'
-            g = link.glue[t][ent]
-            fan = fan.extend(ent)
-            t, c, ent = fan.ts[-1], g[c], g[ex]
-            ex = 3 - c - ent
-            if (t, c) == (t0, d0):
-                st = state(_apply(fan.pos[-1], b_out.E))
-                return {'after': 'ge', 'eq': 'eq'}.get(st, 'lt')
-        raise RuntimeError('fan walk around link vertex did not reach the outgoing triangle')
 
 
 def search(link, beads, findall=False, allow_repeats=False, stop_at_start=False):
@@ -136,7 +77,7 @@ def search(link, beads, findall=False, allow_repeats=False, stop_at_start=False)
     Length comparisons with 2*pi are rigorous: every bead carries a bound
     length_err on the float error of its length; a comparison is decided in
     floating point only when the error interval excludes 2*pi, otherwise
-    exactly (cmp_two_pi). Distance bounds use lengths minus errors, so they
+    exactly (at_least_two_pi). Distance bounds use lengths minus errors, so they
     are guaranteed underestimates."""
     J = Junctions(link)
     by_start = {}
@@ -197,7 +138,7 @@ def search(link, beads, findall=False, allow_repeats=False, stop_at_start=False)
             if new_total - new_err >= TWO_PI:
                 continue                       # certainly >= 2*pi
             if new_total + new_err >= TWO_PI:  # undecided in floats: exact
-                if cmp_two_pi([beads[i] for i in path] + [b]) >= 0:
+                if at_least_two_pi([beads[i] for i in path] + [b]):
                     continue
             if not allow_repeats and tris & set(b.ts):
                 continue
@@ -217,30 +158,13 @@ def search(link, beads, findall=False, allow_repeats=False, stop_at_start=False)
     return found[0] if found else None
 
 
-def cmp_two_pi(beads):
-    """Exact sign of (sum of bead lengths - 2*pi), for a sum known to be close
-    to 2*pi (within the beads' float error bounds, far below pi/2).
-
-    A bead of length theta in [0, pi] contributes the complex number
-    a + i*b = |S||E| e^{i theta} with a = S.E and b = sqrt(|S|^2 |E|^2 - a^2) >= 0.
-    The product z of these has argument = the total length (mod 2*pi), so
-    with the total within EPS of 2*pi: total == 2*pi iff Im z == 0, and
-    otherwise sign(total - 2*pi) = sign(Im z). b is exact when |S|^2|E|^2 - a^2
-    is rational, which holds whenever the link's field is Q (e.g. the cube and
-    disphenoid shapes); otherwise UndecidedError.
-    """
-    re, im = MQone, MQzero
-    for bd in beads:
-        st = bd.strip
-        a = st.dot(bd.S, bd.E)
-        b2 = st.dot(bd.S, bd.S) * st.dot(bd.E, bd.E) - a * a
-        if any(s != 1 for s in b2.t):
-            raise UndecidedError('length tie in a non-rational link field')
-        b = _MQ.sqrt_rational(b2.t.get(1, 0))
-        re, im = re * a - im * b, re * b + im * a
-    if (re.sign() <= 0) and not im.is_zero():
-        raise UndecidedError('length tie: product not near the positive real axis')
-    return im.sign()
+def at_least_two_pi(beads):
+    """Exactly: is the total length of these beads >= 2*pi? (kernel AngleSum;
+    a pi-bead counts as exactly pi)."""
+    try:
+        return kernel.total_length(beads).at_least(2)
+    except kernel.Reject as e:
+        raise UndecidedError('length comparison: %s' % e)
 
 
 # ------------------------------------------------------------------ pi-beads

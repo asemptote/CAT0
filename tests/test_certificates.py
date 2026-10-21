@@ -1,4 +1,4 @@
-"""certcheck must accept every certificate vlink produces for a False answer
+"""The kernel must accept every certificate vlink produces for a False answer
 and reject wrong ones.
 
     python tests/test_certificates.py
@@ -13,7 +13,7 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path[:0] = [ROOT, os.path.join(ROOT, 'validation')]
 
-from certcheck import check_certificate  # noqa: E402
+from vlink.kernel import check_certificate  # noqa: E402
 from vlink.check import CERT_FORMAT, certificate  # noqa: E402
 
 RESULTS = os.path.join(ROOT, 'validation', 'results')

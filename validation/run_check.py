@@ -93,7 +93,17 @@ def run_vlink_stopstart(isosig, sqlens):
     return vertex_linkcond(isosig, sqlens, stop_at_start=True)
 
 
+def run_linkcond(isosig, sqlens):
+    """vlink's full test (validity, edges, vertex links), every False answer
+    verified by the kernel; certificates kept in the output."""
+    from vlink.check import linkcond
+    r = linkcond(isosig, sqlens)
+    r.pop('necklace', None)
+    return r
+
+
 IMPLS = dict(current=run_current, legacy2020=run_legacy2020, vlink=run_vlink,
+             linkcond=run_linkcond,
              vlink_norepeat=run_vlink_norepeat, vlink_repeats=run_vlink_repeats,
              vlink_stopstart=run_vlink_stopstart)
 
