@@ -1,0 +1,32 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  tests:
+    # regina's PyPI wheels are Linux/macOS only
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Install
+        run: uv sync --python 3.12
+      - name: Field and link geometry
+        run: uv run python tests/test_vlink_geometry.py
+      - name: Edge condition (exact vs float)
+        run: uv run python tests/test_vlink_edges.py
+      - name: Regression (known answers)
+        run: uv run python tests/test_regression.py
+      - name: Certificates for False answers
+        run: uv run python tests/test_certificates.py
+      - name: Certificates for True answers
+        run: uv run python tests/test_true_certificates.py
+      - name: Pi-length beads
+        run: uv run python tests/test_pi_beads.py
+      - name: Irrational link fields
+        run: uv run python tests/test_towers.py
+      - name: Bead completeness (brute force, strips up to 4)
+        run: uv run python tests/brute_beads.py 4 | tee brute.txt && grep -q COMPLETE brute.txt

@@ -15,7 +15,7 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path[:0] = [ROOT, os.path.join(ROOT, 'validation')]
 
-import examples  # noqa: E402
+
 from vlink import kernel  # noqa: E402
 from vlink.beads import all_beads  # noqa: E402
 from vlink.link import link_of  # noqa: E402
@@ -46,10 +46,19 @@ def brute(link, K):
     return found
 
 
+CASES = ('examples_1 #0', 'examples_1 #5', 'examples_3_disphenoid #8',
+         'examples_3_disphenoid #14', 'hyperbolic_candidate #0')
+
+
 def main(K=6):
-    cases = [e for e in examples.load('examples_1') if e['idx'] in (0, 5)] + \
-            [e for e in examples.load('examples_3_disphenoid') if e['idx'] in (8, 14)] + \
-            [e for e in examples.load('hyperbolic_candidate')]
+    import json
+    data = json.load(open(os.path.join(ROOT, 'tests', 'data', 'regression_cases.json')))
+    cases = []
+    for c in data['cases']:
+        if c['source'] in CASES:
+            f, _, i = c['source'].partition(' #')
+            cases.append(dict(file=f, idx=int(i), isosig=c['isosig'], sqlens=c['sqlens']))
+    assert len(cases) == len(CASES), [c['source'] for c in data['cases']][:5]
     ok = True
     for e in cases:
         link = link_of(e['isosig'], 0, e['sqlens'])

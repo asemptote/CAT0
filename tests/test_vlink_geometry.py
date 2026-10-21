@@ -112,9 +112,10 @@ def test_hyperbolic_candidate_link():
 
 
 def test_disphenoid_link():
-    import examples
-    ex = [e for e in examples.load('examples_3_disphenoid') if e['isosig'] == DISPHENOID[0]][0]
-    _check_link(ex['isosig'], ex['sqlens'])
+    import json
+    data = json.load(open(os.path.join(ROOT, 'tests', 'data', 'regression_cases.json')))
+    sq = next(c['sqlens'] for c in data['cases'] if c['isosig'] == DISPHENOID[0])
+    _check_link(DISPHENOID[0], sq)
 
 
 def test_generic_lengths_link():

@@ -12,19 +12,23 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path[:0] = [ROOT, os.path.join(ROOT, 'validation')]
 
-import examples  # noqa: E402
 import verify_cert as V  # noqa: E402
 from vlink.edges import edge_report  # noqa: E402
 
+DATA = json.load(open(os.path.join(ROOT, 'tests', 'data', 'regression_cases.json')))
+
 
 def inputs():
+    """Every metric with known data in the repository (no candidate files
+    needed): the regression cases, all checked metrics, and the controls."""
     seen = set()
-    for e in examples.load_all(examples.FILES + ('examples_3_disphenoid',)):
-        key = (e['isosig'], tuple(e['sqlens']))
+    for c in DATA['cases']:
+        key = (c['isosig'], tuple(c['sqlens']))
         if key not in seen:
             seen.add(key)
-            yield e['isosig'], e['sqlens']
-    for path in glob.glob(os.path.join(ROOT, 'validation', 'results', '*controls*.jsonl')):
+            yield c['isosig'], c['sqlens']
+    for path in [os.path.join(ROOT, 'validation', 'results', 'all_metrics2.jsonl')] + \
+            glob.glob(os.path.join(ROOT, 'validation', 'results', '*controls*.jsonl')):
         for line in open(path):
             r = json.loads(line)
             key = (r['isosig'], tuple(r['sqlens']))
@@ -48,8 +52,8 @@ def test_edge_report_matches_float():
 
 
 def test_examples_3_labels_are_degenerate():
-    for e in examples.load('examples_3'):
-        assert edge_report(e['isosig'], e['sqlens'])['valid'] is False
+    for c in DATA['invalid']:
+        assert edge_report(c['isosig'], c['sqlens'])['valid'] is False
 
 
 if __name__ == '__main__':
