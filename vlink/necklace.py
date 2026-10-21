@@ -204,9 +204,11 @@ def _boundary(link, P, frame, t, c, u, k, target):
     toward the exit ray `ex`; Pt are the target triangle's developed vertices.
     """
     if (t, c) == target:
-        # the incoming and outgoing corners coincide: the corner is split by u
-        # and would need two constraints; rare, not handled yet
-        raise UndecidedError('pi-bead junction inside a single corner')
+        # The neighbouring bead's direction u and every geodesic of the lune
+        # lie in this same triangle corner, so on the side between them the
+        # angle is at most the corner angle, which is < pi: the junction fails
+        # for every geodesic in the lune.
+        return ('none',)
     fan = Strip.__new__(Strip)
     fan.link, fan.ts, fan.pos, fan.frame = link, (t,), (P,), frame
     fan.steps = ()
@@ -246,7 +248,8 @@ def _boundary(link, P, frame, t, c, u, k, target):
 
 def _pi_feasible(link, prev, p, nxt):
     """Is there a geodesic in the pi-bead p's lune such that the junctions
-    prev -> p (at S) and p -> nxt (at -S) are both >= pi on both sides?"""
+    prev -> p (at S) and p -> nxt (at -S) are both >= pi on both sides?
+    Returns a point Q (p's frame) fixing such a geodesic, or None."""
     S, E = p.S, p.E
     L, R = p.pi_range
     pstrip = p.strip
@@ -256,7 +259,7 @@ def _pi_feasible(link, prev, p, nxt):
         r = _boundary(link, prev.strip.pos[-1], prev.strip.frame, prev.ts[-1], prev.end,
                       prev.S, k, (p.ts[0], p.start))
         if r[0] == 'none':
-            return False
+            return None
         if r[0] == 'from':
             _, B, Pt, ent, ex = r
             Bp = _to_basis(Pt, B)                     # p's frame = its first triangle's basis
@@ -270,7 +273,7 @@ def _pi_feasible(link, prev, p, nxt):
         r = _boundary(link, nxt.strip.pos[0], nxt.strip.frame, nxt.ts[0], nxt.start,
                       nxt.E, k, (p.ts[-1], p.end))
         if r[0] == 'none':
-            return False
+            return None
         if r[0] == 'from':
             _, B, Pt, ent, ex = r
             Bp = _apply(Plast, _to_basis(Pt, B))
@@ -285,7 +288,7 @@ def _pi_feasible(link, prev, p, nxt):
         if f_lo >= 0 and f_hi >= 0:
             continue
         if f_lo < 0 and f_hi < 0:
-            return False
+            return None
         # the boundary ray (B or its opposite about S) lies inside (lo, hi)
         Z = B if _inside_arc(S, lo, hi, B) else _opposite_ray(pstrip, S, B)
         if f_lo < 0:
