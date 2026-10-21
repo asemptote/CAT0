@@ -116,13 +116,14 @@ def _lin(c1, x, c2, y):
 class Strip:
     """A developed sequence of link triangles (all in the first one's frame)."""
 
-    __slots__ = ('link', 'ts', 'pos', 'frame')
+    __slots__ = ('link', 'ts', 'pos', 'frame', 'steps')
 
     def __init__(self, link, t, pos, ts=None, frame=None):
         self.link = link
         self.ts = ts or (t,)
         self.pos = (tuple(pos),)
         self.frame = frame if frame is not None else t
+        self.steps = ()  # vertex d crossed opposite at each extension (for certificates)
 
     def extend(self, d):
         """New strip with the neighbour across the edge opposite vertex d of
@@ -138,6 +139,7 @@ class Strip:
         P2[g[a]], P2[g[b]], P2[g[d]] = P[a], P[b], new
         s = Strip.__new__(Strip)
         s.link, s.ts, s.pos, s.frame = link, self.ts + (t2,), self.pos + (tuple(P2),), self.frame
+        s.steps = self.steps + (d,)
         return s
 
     # ----------------------------------------------------------- predicates

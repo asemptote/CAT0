@@ -60,5 +60,44 @@ def linkcond(isosig, sqlens, allow_repeats=True):
 
 
 def _export(necklace):
+    pi_point = getattr(necklace, 'pi_point', None)
     return [dict(ts=list(b.ts), start=b.start, end=b.end, length=b.length,
-                 pi=bool(b.pi_range)) for b in necklace]
+                 pi=bool(b.pi_range), steps=list(b.strip.steps),
+                 pi_point=_mq_vec(pi_point) if (b.pi_range and pi_point is not None) else None)
+            for b in necklace]
+
+
+def _mq_vec(v):
+    """Serialise a vector of field elements: [{squarefree s: 'p/q'}, ...]."""
+    return [{str(s): str(c) for s, c in x.t.items()} for x in v]
+
+
+CERT_FORMAT = 'vlink-certificate/1'
+
+
+def certificate(isosig, sqlens):
+    """linkcond, plus a certificate for a False answer that
+    certcheck.check_certificate verifies exactly and independently:
+
+      reason 'invalid': a tetrahedron that is not a non-degenerate Euclidean one
+      reason 'edge'   : an edge whose dihedral angles sum to < 2*pi
+      reason 'vertex' : a necklace of beads in a vertex link: each bead with its
+                        link triangles, start/end corners and the strip's gluing
+                        steps; a pi-bead with the point fixing its geodesic.
+
+    True answers carry no certificate yet (certificate=None)."""
+    r = linkcond(isosig, sqlens)
+    cert = None
+    if r['result'] is False:
+        cert = dict(format=CERT_FORMAT, isosig=isosig, sqlens=list(sqlens), reason=r['reason'])
+        if r['reason'] == 'invalid':
+            cert['tet'] = r['degenerate_tet']
+        elif r['reason'] == 'edge':
+            cert['edge'] = r['failing_edges'][0]
+        else:
+            cert['vertex'] = r['vertex']
+            cert['necklace'] = [dict(ts=b['ts'], start=b['start'], end=b['end'],
+                                     steps=b['steps'], pi_point=b['pi_point'])
+                                for b in r['necklace']]
+    r['certificate'] = cert
+    return r

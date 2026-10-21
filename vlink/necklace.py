@@ -82,6 +82,7 @@ class Junctions:
         P = b_in.strip.pos[-1]
         fan = Strip.__new__(Strip)
         fan.link, fan.ts, fan.pos, fan.frame = link, (tm,), (P,), b_in.strip.frame
+        fan.steps = ()
         W, u = P[rm], b_in.S
         d = (rm + k) % 3
         y = 3 - rm - d
@@ -157,12 +158,14 @@ def search(link, beads, findall=False, allow_repeats=False):
         g0 = beads[path[0]]
         w = link.lv[gm.ts[-1]][gm.end]
         if w == link.lv[g0.ts[0]][g0.start]:
-            if gm.pi_range or g0.pi_range:
-                ok = _pi_junctions(J, [beads[i] for i in path])
+            neck = Necklace(beads[i] for i in path)
+            if gm.pi_range or g0.pi_range or any(b.pi_range for b in neck):
+                neck.pi_point = _pi_junctions(J, neck)
+                ok = neck.pi_point is not None
             else:
                 ok = J.ok(gm, g0)
             if ok:
-                found.append([beads[i] for i in path])
+                found.append(neck)
                 return not findall
             return False
         s0 = link.lv[g0.ts[0]][g0.start]
@@ -268,6 +271,7 @@ def _boundary(link, P, frame, t, c, u, k, target):
         raise UndecidedError('pi-bead junction inside a single corner')
     fan = Strip.__new__(Strip)
     fan.link, fan.ts, fan.pos, fan.frame = link, (t,), (P,), frame
+    fan.steps = ()
     W = P[c]
     d = (c + k) % 3
     y = 3 - c - d
@@ -350,10 +354,14 @@ def _pi_feasible(link, prev, p, nxt):
             lo, lo_closed = Z, True
         else:
             hi, hi_closed = Z, True
+    # Feasible: return a point Q (p's frame) whose ray from S gives a suitable
+    # geodesic in the lune (the certificate records it); None if infeasible.
     s = Strip.det(S, lo, hi).sign()
     if s > 0:
-        return True
-    return s == 0 and lo_closed and hi_closed and _tangent_dot_sign(pstrip, S, lo, hi) > 0
+        return tuple(x + y for x, y in zip(lo, hi))   # strictly inside (lo, hi)
+    if s == 0 and lo_closed and hi_closed and _tangent_dot_sign(pstrip, S, lo, hi) > 0:
+        return lo                                      # a single admissible ray
+    return None
 
 
 def _inside_arc(S, lo, hi, X):
@@ -371,8 +379,14 @@ def _pi_junctions(J, beads):
         if a.pi_range or b.pi_range:
             continue
         if not J.ok(a, b):
-            return False
+            return None
     return _pi_feasible(J.link, beads[i - 1], beads[i], beads[(i + 1) % m])
+
+
+class Necklace(list):
+    """A found necklace: list of beads; pi_point is the geodesic direction
+    chosen in the pi-bead's lune (a point in that bead's frame), if any."""
+    pi_point = None
 
 
 from .field import MQ as _MQ  # noqa: E402

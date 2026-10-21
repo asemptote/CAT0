@@ -40,6 +40,23 @@ linkcond('gLLPQaceedffnkxknnn', [1, 2, 3, 1, 1, 2, 2])   # validity + edges + ve
 - Requirements: Python ≥ 3.10, `regina` ≥ 7.4 (PyPI wheels: Linux/macOS).
 - Tests: `python tests/test_vlink_geometry.py`, `python tests/test_vlink_edges.py`.
 
+## Certificates
+
+`vlink.check.certificate(isosig, sqlens)` returns `linkcond`'s answer plus, for
+a `False` answer, a certificate (`vlink-certificate/1`, JSON): a degenerate
+tetrahedron, an edge whose dihedral angles sum to < 2π, or a necklace in a
+vertex link (beads with their link triangles, corners, strip gluing steps, and
+for a π-length bead the point fixing its geodesic).
+
+`certcheck.check_certificate(cert)` verifies a certificate exactly and
+independently of vlink's search. Its trusted base is `vlink/field.py` and
+Regina's combinatorics; it uses no floating point. Angles are summed as
+products of a + ib (a and b² exact) with an exact half-turn count, bead
+geodesics are checked with exact cone tests, and junction angles are summed
+from intrinsic corner angles. `tests/test_certificates.py`: every vlink
+certificate is accepted; all wrong ones tried (the 2020 code's witnesses,
+corrupted certificates) are rejected. `True` answers have no certificate yet.
+
 ## Validation
 
 `validation/` holds the tooling used to check the checkers (results and a
