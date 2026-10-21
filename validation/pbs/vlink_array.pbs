@@ -1,0 +1,30 @@
+#!/bin/bash
+# PBS array job: run a checker over a JSONL file of metrics in 48 slices.
+#
+# Submit from headnode (inputs and outputs live on /import/taiji1, visible to
+# the PBS nodes; the environment is ~/envs/cat0-vertex-link):
+#
+#   qsub -v INPUT=validation/results/census_walks.hw2.jsonl,NAME=hw2 \
+#        validation/pbs/vlink_array.pbs
+#
+# Optional: IMPL (default vlink). Each array task appends to
+# validation/results/pbs/$NAME.$PBS_ARRAY_INDEX.jsonl and skips inputs already
+# there, so resubmitting after a walltime kill resumes. Merge afterwards with
+#   cat validation/results/pbs/$NAME.*.jsonl > validation/results/$NAME.vlink.jsonl
+#
+# defaultQ: at most 48 cores per user; default walltime 2 h, so set it here.
+#PBS -N vlink-array
+#PBS -q defaultQ
+#PBS -l select=1:ncpus=1:mem=2gb
+#PBS -l walltime=12:00:00
+#PBS -J 0-47
+#PBS -j oe
+#PBS -o /import/taiji1/wardak/cat0-vertex-link/CAT0/validation/results/pbs/
+
+set -euo pipefail
+cd /import/taiji1/wardak/cat0-vertex-link/CAT0
+source ~/envs/cat0-vertex-link/bin/activate
+mkdir -p validation/results/pbs
+python validation/run_check.py --impl "${IMPL:-vlink}" --jsonl "$INPUT" \
+    --chunk "$PBS_ARRAY_INDEX" --nchunks 48 --workers 1 \
+    --out "validation/results/pbs/$NAME.$PBS_ARRAY_INDEX.jsonl"
