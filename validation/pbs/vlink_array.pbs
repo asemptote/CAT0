@@ -1,7 +1,7 @@
 #!/bin/bash
 # PBS array job: run a checker over a JSONL file of metrics in 48 slices.
 #
-# Submit from headnode (inputs and outputs live on /import/silo3, visible to
+# Submit from headnode (inputs and outputs live on /import/taiji1, visible to
 # the PBS nodes; the environment is ~/envs/cat0-vertex-link):
 #
 #   qsub -v INPUT=validation/results/census_walks.hw2.jsonl,NAME=hw2 \
@@ -19,10 +19,10 @@
 #PBS -l walltime=12:00:00
 #PBS -J 0-47
 #PBS -j oe
-#PBS -o /import/silo3/wardak/cat0-vertex-link/CAT0/validation/results/pbs/
+#PBS -o /import/taiji1/wardak/cat0-vertex-link/CAT0/validation/results/pbs/
 
 set -euo pipefail
-cd /import/silo3/wardak/cat0-vertex-link/CAT0
+cd /import/taiji1/wardak/cat0-vertex-link/CAT0
 source ~/envs/cat0-vertex-link/bin/activate
 mkdir -p validation/results/pbs
 python validation/run_check.py --impl "${IMPL:-vlink}" --jsonl "$INPUT" \
