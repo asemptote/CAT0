@@ -31,11 +31,12 @@ sign test; ties at length 2π and angle π are decided exactly.
 
 ```python
 from vlink.check import linkcond, vertex_linkcond
-linkcond('gLLPQaceedffnkxknnn', [1, 2, 3, 1, 1, 2, 2])   # validity + edges + vertices
-# -> {'result': True, 'reason': None, 'flat': True}
+linkcond('gLLPQaceedffnkxknnn', [1, 2, 3, 1, 1, 2, 2], certify=True)
+# -> {'result': True, 'reason': None, 'flat': True, 'verified': True, ...}
 ```
 
-- `field.py` exact Q(√q₁, √q₂, …) numbers; `link.py` exact development of
+- `tri.py` isosig decoding and skeleton (the kernel's own, no Regina);
+  `field.py` exact Q(√q₁, √q₂, …) numbers; `link.py` exact development of
   link triangles; `beads.py` bead enumeration; `necklace.py` necklace search;
   `edges.py` exact tetrahedron validity and edge condition; `check.py` entry points.
 - With `allow_repeats=False` the bead sets are identical to `gallery.py`'s and
@@ -51,19 +52,25 @@ linkcond('gLLPQaceedffnkxknnn', [1, 2, 3, 1, 1, 2, 2])   # validity + edges + ve
   the float error of its length; inside the error window the comparison is
   exact). On all 106 metrics checked so far, dropping either rule changes no
   answer.
-- Requirements: Python ≥ 3.10, `regina` ≥ 7.4 (PyPI wheels: Linux/macOS).
-- Tests: `python tests/test_vlink_geometry.py`, `python tests/test_vlink_edges.py`.
+- Requirements: Python ≥ 3.10 only; vlink runs anywhere, Windows included.
+  The tests and validation scripts also use `numpy` and `regina` ≥ 7.4 (PyPI
+  wheels: Linux/macOS) as independent references.
+- Tests: `tests/test_*.py` (see `.github/workflows/tests.yml`).
 
 ## Certificates
 
-`vlink.check.certificate(isosig, sqlens)` returns `linkcond`'s answer plus, for
-a `False` answer, a certificate (`vlink-certificate/1`, JSON): a degenerate
-tetrahedron, an edge whose dihedral angles sum to < 2π, or a necklace in a
-vertex link (beads with their link triangles, corners, strip gluing steps, and
-for a π-length bead the point fixing its geodesic).
+`linkcond(isosig, sqlens, certify=True)` returns the answer with a JSON
+certificate. For `False` (`vlink-certificate/2`): a degenerate tetrahedron,
+an edge whose dihedral angles sum to < 2π, or a necklace in a vertex link
+(beads with their link triangles, corners, strip gluing steps, and for a
+π-length bead the point fixing its geodesic). For `True`
+(`vlink-certificate-true/2`, `docs/true_certificates.md`): shortest-path trees
+showing no necklace is shorter than 2π; the kernel re-enumerates the beads
+itself. Link triangles are numbered as sorted corners (tetrahedron, vertex)
+(format /2; /1 used Regina's vertex-link numbering).
 
 vlink is one implementation with a small trusted **kernel**
-(`vlink/kernel.py`, plus `vlink/field.py` and Regina's combinatorics). The
+(`vlink/kernel.py`, plus `vlink/field.py` and `vlink/tri.py`). The
 kernel holds every geometric predicate: tetrahedron validity, dihedral and
 edge angle sums, link data and strip development, bead geodesics (exact cone
 tests), junction angles (sums of intrinsic corner angles) and length
@@ -71,10 +78,16 @@ comparisons. It uses no floating point: angles are summed as products of
 a + ib (a and b² exact) with an exact half-turn count. The search modules
 (`beads.py`, `necklace.py`) only decide what to ask the kernel, and
 `linkcond` returns a `False` answer only after `kernel.check_certificate` has
-verified its certificate (`'verified': True`). `True` answers are not yet
-certified. `tests/test_certificates.py`: every certificate vlink produces is
-accepted; all wrong ones tried (the 2020 code's witnesses, corrupted
-certificates) are rejected.
+verified its certificate (`'verified': True`); with `certify=True` so does a
+`True` answer. `tests/test_certificates.py`, `tests/test_true_certificates.py`:
+every certificate vlink produces is accepted; all wrong ones tried (the 2020
+code's witnesses, corrupted certificates) are rejected. `docs/proofs.md`
+proves each kernel step and lists what remains trusted.
+
+`lean/` is a Lean 4 / Mathlib formalisation of the kernel, in progress: the
+exact arithmetic (`MQ`, `Tw`: sign algorithm proved sound) and angle sums
+(`AngleSum`: half-turn counting proved correct) are verified; `vlinkcheck` is an
+executable Lean checker for both certificate formats, built on them.
 
 ## Validation
 

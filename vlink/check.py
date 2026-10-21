@@ -15,8 +15,6 @@ gallery.vertex_linkcond). Both raise necklace.UndecidedError instead of
 guessing in the rare cases not decided exactly.
 """
 
-import regina
-
 from . import kernel
 from .beads import all_beads
 from .edges import edge_report
@@ -37,11 +35,10 @@ def vertex_linkcond(isosig, sqlens, findall=False, allow_repeats=True, stop_at_s
     reproduces gallery.py's rule of never extending a path past its start.
     pi_beads=False leaves out beads of length exactly pi: a True answer then
     also relies on Elder-McCammond-Meier (2003) Lemma 4.9."""
-    T = regina.Triangulation3.fromIsoSig(isosig)
-    geo = kernel.Geometry(T, sqlens)
+    geo = kernel.Geometry(isosig, sqlens)
     allfound = []
-    for i_v in range(T.countVertices()):
-        link = VertexLink(T, i_v, sqlens, geo=geo)
+    for i_v in range(geo.T.n_vertices):
+        link = VertexLink(geo.T, i_v, sqlens, geo=geo)
         beads = all_beads(link, allow_repeats, pi_beads)
         res = search(link, beads, findall=findall, allow_repeats=allow_repeats,
                      stop_at_start=stop_at_start)

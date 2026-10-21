@@ -14,6 +14,8 @@ jobs:
       - uses: astral-sh/setup-uv@v10.2.0
       - name: Install
         run: uv sync --python 3.12
+      - name: Isosig decoding and skeleton (vs Regina)
+        run: uv run python tests/test_tri.py
       - name: Field and link geometry
         run: uv run python tests/test_vlink_geometry.py
       - name: Edge condition (exact vs float)
@@ -30,3 +32,13 @@ jobs:
         run: uv run python tests/test_towers.py
       - name: Bead completeness (brute force, strips up to 4)
         run: uv run python tests/brute_beads.py 4 | tee brute.txt && grep -q COMPLETE brute.txt
+
+  lean:
+    # the Lean formalisation (lean/): proofs and the vlinkcheck executable
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: lean

@@ -7,3 +7,4 @@ validation/legacy/constructible_2020.py
 validation/results/*.log
 validation/results/*.prof
 validation/results/queue_*.sh
+*.egg-info/

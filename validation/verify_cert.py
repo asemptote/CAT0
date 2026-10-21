@@ -3,8 +3,8 @@
 Shares no code with gallery.py / constrsphtrig.py / the 2020 vLinkCond.py: each
 tetrahedron is embedded in R^3 from its squared edge lengths, link triangles are
 spherical triangles of actual unit vectors, and beads are developed onto S^2 by
-rigid motions. Regina is used only for combinatorics (isosig decoding, the
-vertex link and its inclusion map).
+rigid motions. Regina is used only for combinatorics (isosig decoding,
+gluings, edge and vertex numbering), independently of vlink.tri.
 
 metric_report(isosig, sqlens)
     - is the input well formed (one length per edge)?
@@ -131,16 +131,48 @@ class Link:
     """Vertex link of T at vertex i_v, with each link triangle given as three
     unit vectors (in its own tetrahedron's frame)."""
 
-    def __init__(self, isosig, sqlens, i_v):
+    def __init__(self, isosig, sqlens, i_v, numbering='canonical'):
         self.T = T = regina.Triangulation3.fromIsoSig(isosig)
         v = T.vertex(i_v)
-        self.L = L = v.buildLink()
-        I = v.buildLinkInclusion()
-        self.n = L.size()
+        if numbering == 'regina':
+            # Regina's own vertex link (the 2020 code's numbering)
+            L, I = v.buildLink(), v.buildLinkInclusion()
+            fps = [(I.tetImage(t), I.facePerm(t)) for t in range(L.size())]
+            self._adj = [[L.triangle(t).adjacentTriangle(d).index() for d in range(3)]
+                         for t in range(L.size())]
+            self._glue = [[tuple(L.triangle(t).adjacentGluing(d)[j] for j in range(3))
+                           for d in range(3)] for t in range(L.size())]
+            self._lv = [[L.triangle(t).vertex(j).index() for j in range(3)]
+                        for t in range(L.size())]
+        else:
+            # vlink's numbering: the corners (tet, v) at the vertex, sorted;
+            # vertex j of a corner is the j-th smallest other tet vertex
+            corners = sorted((e.tetrahedron().index(), e.vertex()) for e in v.embeddings())
+            index = {c: t for t, c in enumerate(corners)}
+            fps = [(tet, [x for x in range(4) if x != w] + [w]) for tet, w in corners]
+            self._adj, self._glue, self._lv = [], [], []
+            for tet, fp in fps:
+                rt = T.tetrahedron(tet)
+                adj, glue = [], []
+                for d in range(3):
+                    g = rt.adjacentGluing(fp[d])
+                    w2 = g[fp[3]]
+                    fp2 = [x for x in range(4) if x != w2]
+                    adj.append(index[(rt.adjacentTetrahedron(fp[d]).index(), w2)])
+                    glue.append(tuple(fp2.index(g[fp[j]]) for j in range(3)))
+                self._adj.append(adj)
+                self._glue.append(glue)
+                lv = []
+                for j in range(3):
+                    k = [i for i in range(6) if {rt.edgeMapping(i)[0], rt.edgeMapping(i)[1]}
+                         == {fp[3], fp[j]}][0]
+                    lv.append((rt.edge(k).index(), 0 if rt.edgeMapping(k)[0] == fp[3] else 1))
+                self._lv.append(lv)
+        self.n = len(fps)
         self.vecs = []
         for t in range(self.n):
-            tet = T.tetrahedron(I.tetImage(t))
-            fp = I.facePerm(t)
+            tet = T.tetrahedron(fps[t][0])
+            fp = fps[t][1]
             p, _ = embed_tet(tet_sqlens(T, sqlens, tet))
             if p is None:
                 raise ValueError('degenerate tetrahedron %d' % tet.index())
@@ -160,8 +192,16 @@ class Link:
         return math.acos(max(-1.0, min(1.0, float(np.dot(unit(u), unit(w))))))
 
     def lv(self, t, c):
-        """Index of the link vertex at corner c of link triangle t."""
-        return self.L.triangle(t).vertex(c).index()
+        """Label of the link vertex at corner c of link triangle t."""
+        return self._lv[t][c]
+
+    def adj(self, t, d):
+        """The link triangle across the edge opposite vertex d of t."""
+        return self._adj[t][d]
+
+    def gluing(self, t, d):
+        """Vertex j of t -> vertex gluing(t, d)[j] of adj(t, d)."""
+        return self._glue[t][d]
 
     def star(self, t, c):
         """Cyclic list of (triangle, corner, entry_vertex, exit_vertex) around
@@ -173,10 +213,9 @@ class Link:
         while True:
             exitv = 3 - c - entry
             out.append((t, c, entry, exitv))
-            tri = self.L.triangle(t)
-            nxt = tri.adjacentTriangle(entry)  # across the edge opposite `entry`
-            g = tri.adjacentGluing(entry)
-            t, c, entry = nxt.index(), g[c], g[exitv]
+            nxt = self.adj(t, entry)  # across the edge opposite `entry`
+            g = self.gluing(t, entry)
+            t, c, entry = nxt, g[c], g[exitv]
             if (t, c) == (t0, c0):
                 return out
             if len(out) > 4 * self.n:
@@ -198,8 +237,7 @@ def develop(link, ts, choices):
     pos = [np.array(link.vecs[ts[0]])]
     for k in range(len(ts) - 1):
         t, d = ts[k], choices[k]
-        tri = link.L.triangle(t)
-        g = tri.adjacentGluing(d)
+        g = link.gluing(t, d)
         t2 = ts[k + 1]
         a, b = [x for x in range(3) if x != d]
         P = pos[-1]
@@ -252,7 +290,7 @@ def verify_bead(link, bead):
     ts, s, e = bead['ts'], bead['start'], bead['end']
     # Enumerate the gluing choices that make ts a connected strip.
     options = [[d for d in range(3)
-                if link.L.triangle(ts[k]).adjacentTriangle(d).index() == ts[k + 1]]
+                if link.adj(ts[k], d) == ts[k + 1]]
                for k in range(len(ts) - 1)]
     results = []
 
@@ -307,8 +345,28 @@ def direction_in_star(link, star, t, c, toward, pos_t):
     raise RuntimeError('corner not in star')
 
 
-def verify_necklace(isosig, sqlens, vertex, beads):
-    link = Link(isosig, sqlens, vertex)
+def regina_to_canonical(isosig, vertex, beads):
+    """One-triangle beads in Regina's link numbering (the 2020 code, and vlink
+    before certificate format /2) -> vlink's numbering."""
+    T = regina.Triangulation3.fromIsoSig(isosig)
+    v = T.vertex(vertex)
+    L, I = v.buildLink(), v.buildLinkInclusion()
+    corners = sorted((e.tetrahedron().index(), e.vertex()) for e in v.embeddings())
+    out = []
+    for b in beads:
+        if len(b['ts']) != 1:
+            raise ValueError('only one-triangle beads are translated')
+        t = b['ts'][0]
+        fp = I.facePerm(t)
+        c = (I.tetImage(t), fp[3])
+        others = [x for x in range(4) if x != fp[3]]
+        out.append(dict(b, ts=[corners.index(c)], start=others.index(fp[b['start']]),
+                        end=others.index(fp[b['end']])))
+    return out
+
+
+def verify_necklace(isosig, sqlens, vertex, beads, numbering="canonical"):
+    link = Link(isosig, sqlens, vertex, numbering)
     out = dict(beads=[], junctions=[])
     bead_res = [verify_bead(link, b) for b in beads]
     for b, r in zip(beads, bead_res):

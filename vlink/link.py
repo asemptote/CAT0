@@ -6,14 +6,13 @@ a developed strip (Strip), which records the gluing steps used so that the
 kernel can re-develop and check any bead the search reports.
 """
 
-import regina
-
 from . import kernel
 from .field import ZERO
 
 
 class VertexLink:
-    """The link of vertex i_v of T with squared edge lengths sqlens.
+    """The link of vertex i_v of T (an isosig or tri.Triangulation) with
+    squared edge lengths sqlens.
 
     Attributes mirror kernel.Link: n (triangles), n_vertices, gram[t] (rational
     Gram matrix of triangle t), adj, glue, lv; `k` is the kernel Link itself."""
@@ -67,7 +66,7 @@ class Strip:
 
 
 def link_of(isosig, i_v, sqlens):
-    return VertexLink(regina.Triangulation3.fromIsoSig(isosig), i_v, sqlens)
+    return VertexLink(isosig, i_v, sqlens)
 
 
 __all__ = ['VertexLink', 'Strip', 'link_of', 'ZERO']

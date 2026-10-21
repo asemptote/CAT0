@@ -53,10 +53,10 @@ def vertex_trees(link, beads, exact_only=False):
 
 
 def true_certificate(isosig, sqlens, pi_beads=True, exact_only=False):
-    """A 'vlink-certificate-true/1' for a metric vlink answered True."""
+    """A 'vlink-certificate-true/2' for a metric vlink answered True."""
     geo = kernel.Geometry(isosig, sqlens)
     vertices = []
-    for i_v in range(geo.T.countVertices()):
+    for i_v in range(geo.T.n_vertices):
         link = kernel.Link(geo, i_v)
         beads = kernel.enumerate_beads(link, allow_repeats=True, pi_beads=pi_beads)
         trees = vertex_trees(link, beads, exact_only)

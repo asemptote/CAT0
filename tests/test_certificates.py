@@ -13,6 +13,7 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path[:0] = [ROOT, os.path.join(ROOT, 'validation')]
 
+import verify_cert as V  # noqa: E402
 from vlink.kernel import check_certificate  # noqa: E402
 from vlink.check import CERT_FORMAT, certificate  # noqa: E402
 
@@ -68,13 +69,15 @@ def test_wrong_certificates_rejected():
                 continue
             if any(len(b['ts']) > 1 for b in r['necklace']):
                 continue
-            ok, _ = check_certificate(_thin_cert(r['isosig'], r['sqlens'], r['vertex'], r['necklace']))
+            beads = V.regina_to_canonical(r['isosig'], r['vertex'], r['necklace'])
+            ok, _ = check_certificate(_thin_cert(r['isosig'], r['sqlens'], r['vertex'], beads))
             assert not ok, (r['file'], r['idx'])
             rejected += 1
     # 2. the 'there and back' loop accepted by the junction bug fixed earlier
     for line in open(os.path.join(RESULTS, 'vlink_repeats.buggy.jsonl')):
         r = json.loads(line)
-        ok, msg = check_certificate(_thin_cert(r['isosig'], r['sqlens'], r['vertex'], r['necklace']))
+        beads = V.regina_to_canonical(r['isosig'], r['vertex'], r['necklace'])
+        ok, msg = check_certificate(_thin_cert(r['isosig'], r['sqlens'], r['vertex'], beads))
         assert not ok, (r['file'], r['idx'])
         rejected += 1
     # 3. corrupted genuine certificates

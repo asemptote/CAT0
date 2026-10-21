@@ -24,21 +24,20 @@ def edge_report(isosig, sqlens):
     """dict(valid, edge_condition, flat, failing_edges, sums); sums are floats
     (dihedral sum / 2*pi per edge) for information only."""
     geo = kernel.Geometry(isosig, sqlens)
-    for t in range(geo.T.size()):
+    for t in range(geo.T.n):
         if not geo.tet_valid(t):
             return dict(valid=False, edge_condition=None, flat=None,
                         failing_edges=None, degenerate_tet=t)
     failing, flat, sums = [], True, []
-    for e in range(geo.T.countEdges()):
+    for e in range(len(geo.T.edges)):
         acc = geo.edge_angle(e)
         if not acc.at_least(2):
             failing.append(e)
         if not _exactly_two_pi(acc):
             flat = False
         total = 0.0
-        for emb in geo.T.edge(e).embeddings():
-            m = emb.vertices()
-            a, b2 = geo.dihedral(emb.tetrahedron().index(), m[0], m[1])
+        for tet, k in geo.T.edges[e]:
+            a, b2 = geo.dihedral(tet, *kernel.EDGES[k])
             total += math.atan2(math.sqrt(max(0.0, float(b2))), float(a))
         sums.append(total / TWO_PI)
     return dict(valid=True, edge_condition=not failing, flat=flat,

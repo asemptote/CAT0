@@ -1,7 +1,8 @@
 """The trusted kernel of vlink: exact geometric predicates and certificate checks.
 
 Everything vlink concludes about a metric rests on the functions in this
-module (and on field.py and Regina's combinatorics); the search modules
+module (and on field.py and tri.py, the kernel's own isosig decoder and
+skeleton; Regina is not used); the search modules
 (beads.py, necklace.py) only decide what to ask the kernel, and every answer
 they produce is checked here before it is returned (check.py). This is the
 part to review closely, and the natural target for a formal proof.
@@ -11,22 +12,24 @@ device is AngleSum: an angle theta in [0, pi] is given as theta = atan2(b, a)
 with a and b^2 exact (b >= 0), and angles are added by multiplying a + i*b
 while counting half-turns exactly, so comparisons with pi and 2*pi are exact.
 
-Geometry: link triangle t of the link of a vertex is the corner of a
-tetrahedron at that vertex; its vertices 0, 1, 2 are the tetrahedron's edge
-vectors from the vertex (Regina: vertex j lies on the edge from facePerm[3]
-to facePerm[j]), with a rational Gram matrix. A strip of link triangles is
+Combinatorics come from tri.py (the kernel's own isosig decoder; Regina is
+not used). Geometry: link triangle t of the link of a vertex is a corner
+(tet, v) of a tetrahedron at that vertex, the corners numbered in sorted
+order; its vertices 0, 1, 2 are the tetrahedron's edge vectors from v to its
+other vertices in increasing order (tri.corner_perm), with a rational Gram
+matrix. A strip of link triangles is
 developed in the basis of its first triangle's edge vectors; crossing to a
 neighbour uses rational projection coefficients and the square root of a
 rational ratio of heights. Points are unnormalised vectors.
 
-Certificates ('vlink-certificate/1') prove a metric is not locally CAT(0):
+Certificates ('vlink-certificate/2') prove a metric is not locally CAT(0):
   invalid  a tetrahedron (or face) with non-positive Gram determinant;
   edge     an edge whose dihedral angles sum to < 2*pi;
   vertex   a necklace of beads in a vertex link: geodesics crossing their
            strips' interior edges, junction angles >= pi on both sides, total
            length < 2*pi (a pi-bead carries pi_point fixing its geodesic).
 
-Certificates ('vlink-certificate-true/1') prove a metric IS locally CAT(0):
+Certificates ('vlink-certificate-true/2') prove a metric IS locally CAT(0):
 the kernel checks validity and every edge itself, enumerates every bead
 itself (enumerate_beads), and verifies shortest-path trees showing that no
 cyclic chain of beads with passing junctions is shorter than 2*pi
@@ -41,12 +44,11 @@ Length comparisons use rigorous float enclosures with exact fallback
 
 from fractions import Fraction
 
-import regina
-
 from .field import MQ, Tower
+from .tri import EDGES, Triangulation, corner_perm
 
 ONE, ZERO = MQ.rational(1), MQ()
-CERT_FORMAT = 'vlink-certificate/1'
+CERT_FORMAT = 'vlink-certificate/2'     # /2: link triangles are sorted corners
 E3 = ((ONE, ZERO, ZERO), (ZERO, ONE, ZERO), (ZERO, ZERO, ONE))
 
 
@@ -130,18 +132,18 @@ def parallel(G, x, y):
 # ----------------------------------------------------------------- metric
 
 class Geometry:
-    """Squared edge lengths of each tetrahedron (local vertex labels)."""
+    """Squared edge lengths of each tetrahedron (local vertex labels) of the
+    closed triangulated 3-manifold T (a tri.Triangulation or an isosig)."""
 
     def __init__(self, T, sqlens):
-        self.T = T = regina.Triangulation3.fromIsoSig(T) if isinstance(T, str) else T
-        if len(sqlens) != T.countEdges():
+        self.T = T = Triangulation(T) if isinstance(T, str) else T
+        if len(sqlens) != len(T.edges):
             raise Reject('wrong number of edge lengths')
         self.d = []
-        for tet in T.tetrahedra():
+        for tet in range(T.n):
             d = {}
-            for k in range(6):
-                m = tet.edgeMapping(k)
-                d[(m[0], m[1])] = d[(m[1], m[0])] = Fraction(sqlens[tet.edge(k).index()])
+            for k, (a, b) in enumerate(EDGES):
+                d[(a, b)] = d[(b, a)] = Fraction(sqlens[T.edge_of[tet][k]])
             self.d.append(d)
 
     def gram(self, tet, base, others):
@@ -169,30 +171,39 @@ class Geometry:
     def edge_angle(self, e):
         """AngleSum of the dihedral angles around edge e."""
         acc = AngleSum()
-        for emb in self.T.edge(e).embeddings():
-            m = emb.vertices()
-            acc.add(*self.dihedral(emb.tetrahedron().index(), m[0], m[1]))
+        for tet, k in self.T.edges[e]:
+            acc.add(*self.dihedral(tet, *EDGES[k]))
         return acc
 
 
 class Link:
-    """Link of vertex i_v: per link triangle, its rational Gram matrix,
-    neighbours, gluing permutations and link-vertex labels."""
+    """Link of vertex i_v: per link triangle (corner), its rational Gram
+    matrix, neighbours adj[t][d] (across the link edge opposite vertex d),
+    gluing permutations glue[t][d] (vertex j of t -> vertex glue[t][d][j] of
+    adj[t][d]) and link-vertex labels lv[t][j] (numbered by first appearance)."""
 
     def __init__(self, geo, i_v):
-        v = geo.T.vertex(i_v)
-        L, I = v.buildLink(), v.buildLinkInclusion()
-        self.i_v, self.n, self.n_vertices = i_v, L.size(), L.countVertices()
+        T = geo.T
+        corners = T.corners[i_v]
+        index = {c: t for t, c in enumerate(corners)}
+        self.i_v, self.n = i_v, len(corners)
         self.G, self.adj, self.glue, self.lv = [], [], [], []
-        for t in range(self.n):
-            tet, fp = I.tetImage(t), I.facePerm(t)
-            if geo.T.tetrahedron(tet).vertex(fp[3]).index() != i_v:
-                raise Reject('link inclusion does not map to the vertex')
-            self.G.append(geo.gram(tet, fp[3], (fp[0], fp[1], fp[2])))
-            tri = L.triangle(t)
-            self.adj.append([tri.adjacentTriangle(e).index() for e in range(3)])
-            self.glue.append([[tri.adjacentGluing(e)[i] for i in range(3)] for e in range(3)])
-            self.lv.append([tri.vertex(j).index() for j in range(3)])
+        labels = {}
+        for tet, v in corners:
+            fp = corner_perm(v)
+            self.G.append(geo.gram(tet, v, fp[:3]))
+            adj, glue = [], []
+            for d in range(3):
+                g = T.glue[tet][fp[d]]
+                v2 = g[v]
+                fp2 = corner_perm(v2)
+                adj.append(index[(T.adj[tet][fp[d]], v2)])
+                glue.append([fp2.index(g[fp[j]]) for j in range(3)])
+            self.adj.append(adj)
+            self.glue.append(glue)
+            self.lv.append([labels.setdefault(T.end[(tet, v, fp[j])], len(labels))
+                            for j in range(3)])
+        self.n_vertices = len(labels)
         self._trans = {}
 
     def transition(self, t, d):
@@ -578,7 +589,7 @@ def angle_leq(x, y):
 
 # ----------------------------------------------------------------- True certificates
 
-TRUE_FORMAT = 'vlink-certificate-true/1'
+TRUE_FORMAT = 'vlink-certificate-true/2'
 LEMMA_4_9 = 'Elder-McCammond-Meier 2003, Lemma 4.9'
 
 
@@ -673,14 +684,14 @@ def _check_true(cert, exact_only):
     if not allow_repeats:
         raise Reject('allow_repeats=False relies on an unproven rule')
     geo = Geometry(cert['isosig'], cert['sqlens'])
-    for t in range(geo.T.size()):
+    for t in range(geo.T.n):
         if not geo.tet_valid(t):
             raise Reject('tetrahedron %d is degenerate' % t)
-    for e in range(geo.T.countEdges()):
+    for e in range(len(geo.T.edges)):
         if not geo.edge_angle(e).at_least(2):
             raise Reject('edge %d has dihedral sum < 2*pi' % e)
     verts = {int(v['vertex']): v for v in cert['vertices']}
-    if sorted(verts) != list(range(geo.T.countVertices())):
+    if sorted(verts) != list(range(geo.T.n_vertices)):
         raise Reject('certificate must cover every vertex')
     for i_v, v in sorted(verts.items()):
         link = Link(geo, i_v)
@@ -690,7 +701,7 @@ def _check_true(cert, exact_only):
         check_vertex_trees(link, beads, {int(k): t for k, t in v['trees'].items()}, exact_only)
     note = ' (assuming %s)' % '; '.join(assumptions) if assumptions else ''
     return 'locally CAT(0): %d tetrahedra valid, all edges >= 2*pi, no short necklace at %d vertices%s' % (
-        geo.T.size(), len(verts), note)
+        geo.T.n, len(verts), note)
 
 
 # ----------------------------------------------------------------- certificates
@@ -710,7 +721,7 @@ def _check(cert):
     if cert.get('format') != CERT_FORMAT:
         raise Reject('unknown certificate format')
     geo = Geometry(cert['isosig'], cert['sqlens'])
-    n_tet = geo.T.size()
+    n_tet = geo.T.n
     reason = cert['reason']
     if reason == 'invalid':
         t = cert['tet']
@@ -727,7 +738,7 @@ def _check(cert):
     if reason != 'vertex':
         raise Reject('unknown reason')
     i_v = cert['vertex']
-    if not 0 <= i_v < geo.T.countVertices():
+    if not 0 <= i_v < geo.T.n_vertices:
         raise Reject('bad vertex')
     link = Link(geo, i_v)
     beads = [check_bead(link, b) for b in cert['necklace']]

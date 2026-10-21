@@ -1,0 +1,26 @@
+#!/bin/bash
+# PBS array job: workers for a validation/workqueue.py queue on /import/taiji1.
+#
+# Submit from headnode; the same queue can be worked at the same time from
+# orr / cartman / stan (backfill):
+#
+#   qsub -v QUEUE=/import/taiji1/wardak/queues/NAME validation/pbs/queue_worker.pbs
+#   python validation/workqueue.py work $QUEUE --workers 18 --nice   # on cartman, say
+#   python validation/workqueue.py status $QUEUE
+#
+# Each array task is one single-core worker; it stops taking tasks 30 min
+# before its walltime, and tasks of killed workers are rerun by others.
+#
+# defaultQ: at most 48 cores per user; default walltime 2 h, so set it here.
+#PBS -N vlink-queue
+#PBS -q defaultQ
+#PBS -l select=1:ncpus=1:mem=4gb
+#PBS -l walltime=12:00:00
+#PBS -J 0-47
+#PBS -j oe
+#PBS -o /import/taiji1/wardak/queues/pbs-logs/
+
+set -euo pipefail
+cd /import/taiji1/wardak/cat0-vertex-link/CAT0
+source ~/envs/cat0-vertex-link/bin/activate
+python validation/workqueue.py work "$QUEUE" --workers 1 --hours 11.5

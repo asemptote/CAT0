@@ -5,13 +5,14 @@ description = "Certified Gromov link condition for piecewise Euclidean triangula
 readme = "README.md"
 license = { file = "LICENSE" }
 authors = [{ name = "Asem Wardak" }]
-# regina's PyPI wheels: CPython 3.9-3.14, Linux x86_64 and macOS (no Windows)
+# vlink itself is pure Python (its kernel decodes isosigs itself, vlink/tri.py)
 requires-python = ">=3.10,<3.15"
-dependencies = ["regina>=7.4.1"]
+dependencies = []
 
 [dependency-groups]
-# validation/verify_cert.py (independent float witness checker) uses numpy
-test = ["numpy>=1.26"]
+# tests and validation: numpy (verify_cert.py, the independent float checker) and
+# Regina (cross-checks; PyPI wheels: CPython 3.9-3.14, Linux x86_64 and macOS only)
+test = ["numpy>=1.26", "regina>=7.4.1; sys_platform != 'win32'"]
 # the legacy code path (gallery.py) uses tqdm for progress bars
 legacy = ["tqdm>=4.66"]
 

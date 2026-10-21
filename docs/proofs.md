@@ -86,7 +86,29 @@ So h is updated exactly; "total ≥ kπ" is h ≥ k. Two sums with equal h diffe
 by less than π, so the sign of Im(z̄₁z₂) decides their order (`angle_leq`).
 b = √(b²) is exact: in F when b² is rational, as a tower symbol otherwise.
 
-## 2. Link geometry (kernel.Geometry, Link, step)
+## 2. Link geometry (tri.py; kernel.Geometry, Link, step)
+
+**Combinatorics.** `tri.py` decodes the isomorphism signature into a gluing
+table exactly as Regina's `fromIsoSig` does (Regina 7.4,
+`triangulation/detail/isosig-impl.h`), and numbers edges and vertices in order
+of first appearance over (tetrahedron, local index), as Regina does; both are
+checked against Regina on all 61,848 triangulations of the closed and
+Hodgson–Weeks censuses and on 3,000 random closed triangulations
+(`tests/test_tri.py`). It rejects anything that is not a closed 3-manifold
+triangulation: boundary facets, an edge identified with itself in reverse,
+or a vertex link that is not a 2-sphere. (With every edge valid and no
+boundary, a vertex link is a closed connected surface — connected because a
+vertex class is a single orbit of corners under face gluings — so Euler
+characteristic 2 makes it a sphere.) This is what §0 (E) needs: Möbius
+galleries do not occur because vertex links are spheres.
+
+The link triangles of vertex v are the corners (τ, w) of tetrahedra with
+vertex w in the class v, in sorted order; vertex j of the corner is the j-th
+smallest vertex of τ other than w. Crossing the link edge opposite vertex j
+is crossing the face of τ opposite that vertex, so the neighbour is the
+corner (τ', g(w)) for the tetrahedron τ' glued there by g, and the link
+gluing is g restricted to the face. A link vertex is an end of an edge of M
+at v (two ends of one edge are distinct link vertices).
 
 Link triangle t of the link of vertex v is the corner of a tetrahedron τ at v;
 its vertices are the edge vectors f₀, f₁, f₂ of τ from v, with Gram matrix
@@ -200,10 +222,9 @@ only make the certificate harder to satisfy, never unsound.
 ## 7. What remains trusted
 
 - The cited results in §0 (and, with `pi_beads=False`, EMM Lemma 4.9).
-- Regina's vertex links: link triangle i is the corner of tetrahedron
-  `tetImage(i)` at the vertex, its vertex j on the edge from `facePerm(i)[3]`
-  to `facePerm(i)[j]`, and `adjacentTriangle` / `adjacentGluing` give the
-  gluing (the kernel checks the first, and §2 checks glued edges agree).
-- Python itself and the ~970 lines of `kernel.py` and `field.py`.
+- That `tri.py` decodes isosigs as Regina does (tested, §2: the statement
+  "isosig X with squared lengths L" refers to Regina's triangulation and edge
+  numbering). Regina itself is no longer used by the kernel.
+- Python itself and the ~1,350 lines of `kernel.py`, `field.py` and `tri.py`.
 
 _Theorem numbers in Bridson–Haefliger to be checked against the book before citing._

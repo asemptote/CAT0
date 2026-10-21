@@ -90,14 +90,14 @@ def _check_link(isosig, sqlens, n_strips=60, max_len=10, seed=0):
 
 
 def _frame_matrix(T_fl, isosig, sqlens, t):
-    """Columns: the (unnormalised) edge vectors of link triangle t in the float
-    embedding used by verify_cert.Link."""
+    """Columns: the (unnormalised) edge vectors of link triangle t (the t-th
+    corner at vertex 0) in the float embedding used by verify_cert.Link."""
     import regina
     T = regina.Triangulation3.fromIsoSig(isosig)
-    v = T.vertex(0)
-    I = v.buildLinkInclusion()
-    tet = T.tetrahedron(I.tetImage(t))
-    fp = I.facePerm(t)
+    corners = sorted((e.tetrahedron().index(), e.vertex()) for e in T.vertex(0).embeddings())
+    tet, w = corners[t]
+    tet = T.tetrahedron(tet)
+    fp = [x for x in range(4) if x != w] + [w]
     p, _ = V.embed_tet(V.tet_sqlens(T, sqlens, tet))
     return np.array([p[fp[j]] - p[fp[3]] for j in range(3)]).T
 
