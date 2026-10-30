@@ -1,4 +1,4 @@
-import VLink.Angle
+import VLink.Vec
 import VLink.Tri
 
 /-!
@@ -15,17 +15,6 @@ Unlike the Python kernel, every length comparison is exact (Python's
 
 namespace VLink
 
-abbrev KM := Except String
-
-def kfuel : Nat := 64
-
-def sgn (x : MQ) : KM Int :=
-  match MQ.sign kfuel x with
-  | some s => pure s
-  | none => throw "sign undecided (out of fuel)"
-
-def isZero (x : MQ) : KM Bool := return (← sgn x) == 0
-
 def twSgn (x : Tw) : KM Int :=
   match Tw.sign kfuel x with
   | some s => pure s
@@ -33,41 +22,11 @@ def twSgn (x : Tw) : KM Int :=
 
 def mqOne : MQ := MQ.ofRat 1
 
-/-! ### Vectors (unnormalised points of the link, coordinates in a fixed frame) -/
+/-! ### Vectors: `V3` and the predicates on it are in `VLink/Vec.lean` -/
 
-abbrev Vec := Array MQ
-abbrev Gram := Array (Array ℚ)
+abbrev Vec := V3
 
-def E3 : Array Vec := #[#[mqOne, [], []], #[[], mqOne, []], #[[], [], mqOne]]
-
-def vsub (x y : Vec) : Vec := (x.zip y).map fun (a, b) => MQ.sub a b
-def vneg (x : Vec) : Vec := x.map MQ.neg
-def vscale (c : MQ) (x : Vec) : Vec := x.map (MQ.mul c)
-def vscaleQ (c : ℚ) (x : Vec) : Vec := x.map (MQ.smul c)
-
-def dot (G : Gram) (x y : Vec) : MQ := Id.run do
-  let mut acc : MQ := []
-  for j in [0:3] do
-    for k in [0:3] do
-      let g := (G[j]!)[k]!
-      if g ≠ 0 then acc := MQ.add acc (MQ.smul g (MQ.mul x[j]! y[k]!))
-  return acc
-
-def det3 (x y z : Vec) : MQ :=
-  let m := MQ.mul
-  let s := MQ.sub
-  MQ.add (s (m x[0]! (s (m y[1]! z[2]!) (m y[2]! z[1]!)))
-            (m x[1]! (s (m y[0]! z[2]!) (m y[2]! z[0]!))))
-         (m x[2]! (s (m y[0]! z[1]!) (m y[1]! z[0]!)))
-
-/-- `+1` same direction, `-1` opposite, `0` not parallel. -/
-def parallel (G : Gram) (x y : Vec) : KM Int := do
-  let m := MQ.mul
-  let c := #[MQ.sub (m x[1]! y[2]!) (m x[2]! y[1]!), MQ.sub (m x[2]! y[0]!) (m x[0]! y[2]!),
-             MQ.sub (m x[0]! y[1]!) (m x[1]! y[0]!)]
-  for v in c do
-    if !(← isZero v) then return 0
-  sgn (dot G x y)
+def E3 : Array V3 := #[⟨mqOne, [], []⟩, ⟨[], mqOne, []⟩, ⟨[], [], mqOne⟩]
 
 /-! ### Angle sums -/
 
@@ -76,8 +35,33 @@ def angleAdd (st : AngleSum) (ab : MQ × MQ) : KM AngleSum :=
   | some st' => pure st'
   | none => throw "angle undecided or between degenerate vectors"
 
-def angleSum (l : Array (MQ × MQ)) : KM AngleSum :=
-  l.foldlM angleAdd AngleSum.zero
+def angleSumL : AngleSum → List (MQ × MQ) → KM AngleSum
+  | st, [] => .ok st
+  | st, p :: l =>
+    match st.add p.1 p.2 with
+    | some st' => angleSumL st' l
+    | none => .error "angle undecided or between degenerate vectors"
+
+def angleSum (l : Array (MQ × MQ)) : KM AngleSum := angleSumL AngleSum.zero l.toList
+
+/-- The exact angle sum represents the sum of the angles. -/
+theorem angleSumL_ok {st st' : AngleSum} {Θ : ℝ} {l : List (MQ × MQ)} (hr : st.Rep Θ)
+    (h : angleSumL st l = .ok st') :
+    st'.Rep (Θ + (l.map fun p => angleOf p.1 p.2).sum) := by
+  induction l generalizing st Θ with
+  | nil => cases h; simpa using hr
+  | cons p l ih =>
+    unfold angleSumL at h
+    split at h
+    · rename_i st1 h1
+      have := ih (AngleSum.add_sound hr h1) h
+      simpa [add_assoc] using this
+    · cases h
+
+theorem angleSum_ok {l : Array (MQ × MQ)} {st : AngleSum} (h : angleSum l = .ok st) :
+    st.Rep ((l.toList.map fun p => angleOf p.1 p.2).sum) := by
+  have := angleSumL_ok AngleSum.rep_zero h
+  simpa using this
 
 def atLeast (st : AngleSum) (k : Nat) : Bool := k ≤ st.h
 
@@ -242,10 +226,10 @@ def step (L : Link) (P : Array Vec) (t d : Nat) : Nat × Array Vec :=
   let Pa := P[a]!
   let Pb := P[b]!
   let Pd := P[d]!
-  let normal := vsub (vsub Pd (vscaleQ tr.p.1 Pa)) (vscaleQ tr.p.2 Pb)
-  let new := vsub (vscaleQ tr.q.1 Pa |> fun x => (x.zip (vscaleQ tr.q.2 Pb)).map
-    fun (u, w) => MQ.add u w) (vscale tr.mu normal)
-  let P2 := ((#[#[], #[], #[]] : Array Vec).set! tr.g[a]! Pa |>.set! tr.g[b]! Pb).set! tr.g[d]! new
+  let normal := V3.sub (V3.sub Pd (V3.scaleQ tr.p.1 Pa)) (V3.scaleQ tr.p.2 Pb)
+  let new := V3.sub (V3.add (V3.scaleQ tr.q.1 Pa) (V3.scaleQ tr.q.2 Pb)) (V3.scale tr.mu normal)
+  let P2 := ((#[default, default, default] : Array V3).set! tr.g[a]! Pa |>.set! tr.g[b]! Pb).set!
+    tr.g[d]! new
   (tr.t2, P2)
 
 def develop (L : Link) (ts steps : Array Nat) : KM (Array (Array Vec)) := do
@@ -263,45 +247,7 @@ def develop (L : Link) (ts steps : Array Nat) : KM (Array (Array Vec)) := do
 
 /-! ### Geodesics and angles -/
 
-def coneSigns (X A B C : Vec) : KM (Int × Int) := do
-  let den ← sgn (det3 A B C)
-  return ((← sgn (det3 X B C)) * den, (← sgn (det3 A X C)) * den)
-
-/-- Does the geodesic from `S` toward `Q` cross the open edge arc `AB`? -/
-def crosses (G : Gram) (S Q A B : Vec) (halfCircle : Bool) : KM Bool := do
-  let dS := det3 A B S
-  if ← isZero dS then return false
-  let dQ := det3 A B Q
-  let X := vsub (vscale dQ S) (vscale dS Q)
-  let mut allZero := true
-  for x in X do
-    if !(← isZero x) then allZero := false
-  if allZero then return false
-  let (al, be) ← coneSigns X A B S
-  if !(al == be && al != 0) then return false
-  let Y := if al > 0 then X else vneg X
-  if halfCircle then
-    let qs := dot G Q S
-    let ss := dot G S S
-    return (← sgn (MQ.sub (MQ.mul (dot G Y Q) ss) (MQ.mul (dot G Y S) qs))) > 0
-  let C := if !(← isZero (det3 S Q A)) then A else B
-  let (ga, de) ← coneSigns Y S Q C
-  return ga > 0 && de > 0
-
-/-- `(a, b²)` of the angle at `W` between the geodesics toward `X` and `Y`. -/
-def tangentAngle (G : Gram) (W X Y : Vec) : MQ × MQ :=
-  let ww := dot G W W
-  let xw := dot G X W
-  let yw := dot G Y W
-  let a := MQ.sub (MQ.mul (dot G X Y) ww) (MQ.mul xw yw)
-  let nx := MQ.sub (MQ.mul (dot G X X) ww) (MQ.mul xw xw)
-  let ny := MQ.sub (MQ.mul (dot G Y Y) ww) (MQ.mul yw yw)
-  (a, MQ.sub (MQ.mul nx ny) (MQ.mul a a))
-
-/-- `(a, b²)` of the angle between `S` and `E`. -/
-def length (G : Gram) (S E : Vec) : MQ × MQ :=
-  let a := dot G S E
-  (a, MQ.sub (MQ.mul (dot G S S) (dot G E E)) (MQ.mul a a))
+/-! `coneSigns`, `crosses`, `tangentAngle`, `length`: `VLink/Vec.lean` -/
 
 /-! ### Beads -/
 
@@ -320,12 +266,28 @@ structure Bead where
   deriving Inhabited
 
 def Bead.make (ts : Array Nat) (start stop : Nat) (G : Gram) (pos : Array (Array Vec))
-    (steps : Array Nat) (Q : Option Vec) : KM Bead := do
+    (steps : Array Nat) (Q : Option Vec) : KM Bead :=
   let S := (pos[0]!)[start]!
   let E := pos.back![stop]!
-  let pi := (← parallel G S E) < 0
-  let q := Q.getD #[]
-  return ⟨ts, start, stop, G, pos, steps, S, E, pi, if pi then q else S, if pi then q else E⟩
+  match parallel G S E with
+  | .error e => .error e
+  | .ok par =>
+    let pi := decide (par < 0)
+    let q := Q.getD default
+    .ok ⟨ts, start, stop, G, pos, steps, S, E, pi, if pi then q else S, if pi then q else E⟩
+
+lemma Bead.make_ok {ts : Array Nat} {start stop : Nat} {G : Gram} {pos : Array (Array Vec)}
+    {steps : Array Nat} {Q : Option Vec} {b : Bead}
+    (h : Bead.make ts start stop G pos steps Q = .ok b) :
+    b.ts = ts ∧ b.G = G ∧ b.pos = pos ∧ b.steps = steps ∧ b.start = start ∧ b.stop = stop ∧
+      b.S = (pos[0]!)[start]! ∧ b.E = pos.back![stop]! ∧
+      b.outDir = (if b.pi then Q.getD default else b.E) := by
+  unfold Bead.make at h
+  dsimp only at h
+  split at h
+  · cases h
+  · cases h
+    simp
 
 /-! ### Bead enumeration (completeness: docs/proofs.md §3) -/
 
@@ -416,8 +378,8 @@ def junctionSide (L : Link) (bin bout : Bead) (k : Nat) : KM AngleSum := do
   let y := 3 - rm - d
   if (tm, rm) == (t0, d0) then
     -- is the outgoing direction inside this corner, between u and ray(y)?
-    let X : Vec := #[0, 1, 2].map fun i =>
-      (List.range 3).foldl (fun acc j => MQ.add acc (MQ.mul bout.outDir[j]! (P[j]!)[i]!)) []
+    let X : Vec := V3.add (V3.add (V3.scale bout.outDir.x P[0]!) (V3.scale bout.outDir.y P[1]!))
+      (V3.scale bout.outDir.z P[2]!)
     let a1b1 := tangentAngle Gin W u X
     let s12 ← angleSum #[a1b1, tangentAngle Gin W X P[y]!]
     let s3 ← angleSum #[tangentAngle Gin W u P[y]!]
@@ -464,32 +426,94 @@ structure BeadSpec where
   piPoint : Option Vec
   deriving Inhabited
 
-def checkBead (L : Link) (spec : BeadSpec) : KM Bead := do
-  let ts := spec.ts
-  let s := spec.start
-  let e := spec.stop
-  if ts.size = 0 || ts.any (· ≥ L.n) || s > 2 || e > 2 then throw "malformed bead"
-  let pos ← develop L ts spec.steps
-  let G := L.G[ts[0]!]!
-  let S := (pos[0]!)[s]!
-  let E := pos.back![e]!
-  let par ← parallel G S E
-  if par > 0 then throw "bead endpoints coincide"
-  let mut Q : Option Vec := none
-  if par < 0 then
-    match spec.piPoint with
-    | none => throw "pi-bead without pi_point"
-    | some q =>
-      if q.size ≠ 3 then throw "malformed pi_point"
-      if (← parallel G S q) != 0 then throw "pi_point on the axis"
-      Q := some q
-  else if ts.size == 1 && s == e then throw "degenerate one-triangle bead"
-  let b ← Bead.make ts s e G pos spec.steps Q
-  for k in [0:ts.size - 1] do
-    let (a, c) := others3 spec.steps[k]!
-    let ok ← crosses G S (if b.pi then b.outDir else E) (pos[k]!)[a]! (pos[k]!)[c]! b.pi
-    if !ok then throw s!"geodesic of bead {ts} does not cross interior edge {k}"
-  return b
+/-- Every interior edge `k` of the strip is crossed by the bead's geodesic. -/
+def checkCrossings (G : Gram) (S Q : V3) (pi : Bool) (pos : Array (Array V3))
+    (steps : Array Nat) : List Nat → KM Unit
+  | [] => .ok ()
+  | k :: ks =>
+    match crosses G S Q ((pos[k]!)[(others3 steps[k]!).1]!) ((pos[k]!)[(others3 steps[k]!).2]!) pi with
+    | .ok true => checkCrossings G S Q pi pos steps ks
+    | .ok false => .error s!"geodesic does not cross interior edge {k}"
+    | .error e => .error e
+
+lemma checkCrossings_ok {G : Gram} {S Q : V3} {pi : Bool} {pos : Array (Array V3)}
+    {steps : Array Nat} {l : List Nat} (h : checkCrossings G S Q pi pos steps l = .ok ()) :
+    ∀ k ∈ l, crosses G S Q ((pos[k]!)[(others3 steps[k]!).1]!)
+      ((pos[k]!)[(others3 steps[k]!).2]!) pi = .ok true := by
+  induction l with
+  | nil => simp
+  | cons k l ih =>
+    unfold checkCrossings at h
+    split at h
+    · rename_i hk
+      intro j hj
+      rcases List.mem_cons.mp hj with rfl | hj
+      · exact hk
+      · exact ih h j hj
+    · cases h
+    · cases h
+
+/-- With a π-bead's point `q`: it must not be on the axis through `S`. -/
+def piQ (G : Gram) (S : V3) : Option V3 → KM (Option V3)
+  | none => .error "pi-bead without pi_point"
+  | some q =>
+    match parallel G S q with
+    | .ok 0 => .ok (some q)
+    | .ok _ => .error "pi_point on the axis"
+    | .error e => .error e
+
+/-- A successful step of a chain of checks. -/
+lemma bind_ok {α β : Type} {x : KM α} {f : α → KM β} {b : β} (h : x >>= f = .ok b) :
+    ∃ a, x = .ok a ∧ f a = .ok b := by
+  cases x with
+  | error e => cases h
+  | ok a => exact ⟨a, rfl, h⟩
+
+def guardK (c : Bool) (msg : String) : KM Unit := if c then .ok () else .error msg
+
+lemma guardK_ok {c : Bool} {msg : String} {u : Unit} (h : guardK c msg = .ok u) : c = true := by
+  unfold guardK at h; split at h
+  · assumption
+  · cases h
+
+def checkBead (L : Link) (spec : BeadSpec) : KM Bead :=
+  guardK (!(spec.ts.size = 0 || spec.ts.any (· ≥ L.n) || spec.start > 2 || spec.stop > 2))
+    "malformed bead" >>= fun _ =>
+  develop L spec.ts spec.steps >>= fun pos =>
+  parallel (L.G[spec.ts[0]!]!) ((pos[0]!)[spec.start]!) (pos.back![spec.stop]!) >>= fun par =>
+  guardK (!(par > 0)) "bead endpoints coincide" >>= fun _ =>
+  (if par < 0 then piQ (L.G[spec.ts[0]!]!) ((pos[0]!)[spec.start]!) spec.piPoint
+   else if spec.ts.size == 1 && spec.start == spec.stop then .error "degenerate one-triangle bead"
+   else .ok none) >>= fun Q =>
+  Bead.make spec.ts spec.start spec.stop (L.G[spec.ts[0]!]!) pos spec.steps Q >>= fun b =>
+  checkCrossings (L.G[spec.ts[0]!]!) ((pos[0]!)[spec.start]!) b.outDir b.pi pos spec.steps
+    (List.range (spec.ts.size - 1)) >>= fun _ =>
+  .ok b
+
+/-- An accepted bead: its geodesic, from `S` toward `outDir`, crosses every
+interior edge of its developed strip (the minor arc to `E`, or for a π-bead
+the half circle through `outDir`). -/
+theorem checkBead_ok {L : Link} {spec : BeadSpec} {b : Bead} (h : checkBead L spec = .ok b) :
+    b.S = (b.pos[0]!)[b.start]! ∧ b.E = b.pos.back![b.stop]! ∧
+      (b.pi = false → b.outDir = b.E) ∧
+      ∀ k ∈ List.range (b.ts.size - 1),
+        crosses b.G b.S b.outDir ((b.pos[k]!)[(others3 b.steps[k]!).1]!)
+          ((b.pos[k]!)[(others3 b.steps[k]!).2]!) b.pi = .ok true := by
+  unfold checkBead at h
+  obtain ⟨_, -, h⟩ := bind_ok h
+  obtain ⟨pos, -, h⟩ := bind_ok h
+  obtain ⟨par, -, h⟩ := bind_ok h
+  obtain ⟨_, -, h⟩ := bind_ok h
+  obtain ⟨Q, -, h⟩ := bind_ok h
+  obtain ⟨b', hb, h⟩ := bind_ok h
+  obtain ⟨_, hc, h⟩ := bind_ok h
+  cases h
+  obtain ⟨hts, hG, hposb, hst, hs, he, hS, hE, hout⟩ := Bead.make_ok hb
+  refine ⟨by rw [hS, hposb, hs], by rw [hE, hposb, he], ?_, ?_⟩
+  · intro hpi; rw [hout, hpi]; rfl
+  · have := checkCrossings_ok hc
+    rw [hts, hG, hposb, hst, hS]
+    exact this
 
 inductive Reason where
   | invalid (tet : Nat)

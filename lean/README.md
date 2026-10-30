@@ -9,7 +9,9 @@ certificates built on it.
 | L1 exact arithmetic | `VLink/MQ.lean` (Σ c √s), `VLink/Tower.lean` (nested √) | proved: every operation computes the real value; `sign` is sound (when it answers, it is the sign of the value) |
 | L2 angle sums | `VLink/Angle.lean` | proved: `AngleSum.add` tracks Σθ exactly with its half-turn count; `Θ ≥ kπ ↔ h ≥ k`; `leq` decides `Θ₁ ≤ Θ₂` |
 | L3 combinatorics | `VLink/Tri.lean` | executable (isosig decoding, skeleton, manifold check) |
-| L3 geometry, L4 certificates | `VLink/Kernel.lean`, `VLink/Cert.lean` | executable; built on the proved L1–L2 |
+| L3 vector predicates | `VLink/Vec.lean` | proved: the exact operations compute the real inner product, determinant and cross product; `parallel` decides parallelism and the inner product's sign (`parallel_ok`); an accepted `crosses` means the geodesic meets the open edge arc at an interior point (`crosses_ok_minor`, `crosses_ok_half`); the angles added for a bead length and for a corner are the angle between the endpoints and between the tangent directions (`length_angle`, `tangent_angle`) |
+| L3 beads | `VLink/Kernel.lean` | proved: an accepted bead crosses every interior edge of its developed strip (`checkBead_ok`); exact angle sums represent the sum of their angles (`angleSum_ok`) |
+| L3 development, junctions, L4 certificates | `VLink/Kernel.lean`, `VLink/Cert.lean` | executable; built on the proved layers |
 | bridge to CAT(0) | `docs/proofs.md` | on paper: cited results (Gromov, Bowditch, Elder–McCammond–Meier) and the kernel's geometric lemmas |
 
 No proof uses linear independence of square roots or any normal form: zero
@@ -57,10 +59,22 @@ certificates, a True certificate for a metric that is not CAT(0)) —
 verdict. Lean took 373 CPU-seconds in all (at most 26 s for one True
 certificate); the Python kernel, exact throughout, 78 CPU-minutes.
 
+`vlinkcheck` is also vlink's reference checker: `vlink.check.linkcond` runs
+it on every certificate when it is built (`vlink/lean.py`) and raises an
+error if it disagrees with the Python kernel. On the 109 validation metrics
+(both π settings, 218 certificates) and the 38 census metrics it agrees
+everywhere.
+
 ## Next
 
-- Specifications for the geometric predicates (`crosses`, `parallel`,
-  `tangentAngle`, development) as statements about real vectors, proved
-  from L1.
+- Development: `step` places the next link triangle isometrically (the
+  developed vectors have the triangle's Gram matrix), from the transition
+  data; and the Gram matrix of a valid tetrahedron is positive definite
+  (so `parallel_ok` reads as "same / opposite direction", and the symmetric
+  hypotheses hold).
+- Junctions: `junctionSide` sums the corner angles around the link vertex
+  (`tangent_angle` for each), so `≥ π` is the local-geodesic condition.
 - The certificate theorems: `checkFalse c = ok → ¬ LinkCondition` and
-  `checkTrue c = ok → LinkCondition`, with the cited results as named axioms.
+  `checkTrue c = ok → LinkCondition`, with the cited results (Gromov,
+  Bowditch, Elder–McCammond–Meier, bead enumeration completeness) as named
+  axioms.

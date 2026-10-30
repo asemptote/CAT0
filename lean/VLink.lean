@@ -1,6 +1,7 @@
 import VLink.MQ
 import VLink.Tower
 import VLink.Angle
+import VLink.Vec
 import VLink.Tri
 import VLink.Kernel
 import VLink.Cert

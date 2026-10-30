@@ -52,7 +52,9 @@ def parseBead (j : Json) : Except String BeadSpec := do
     | .ok (.arr a) => a.mapM (·.getNat?)
     | _ => pure #[]
   let piPoint ← match j.getObjVal? "pi_point" with
-    | .ok (.arr a) => some <$> a.mapM parseMQ
+    | .ok (.arr a) =>
+      if a.size ≠ 3 then throw "malformed pi_point"
+      else do pure (some ⟨← parseMQ a[0]!, ← parseMQ a[1]!, ← parseMQ a[2]!⟩)
     | _ => pure none
   return ⟨ts, start, stop, steps, piPoint⟩
 

@@ -111,14 +111,31 @@ def run_linkcond_nopi(isosig, sqlens):
 
 
 def _certified(isosig, sqlens, **kw):
-    """linkcond with certificates for True answers too; certificates are
-    summarised (size), not stored."""
-    import json as _json
+    """linkcond with certificates for True answers too, checked by the Python
+    kernel and (when built) by vlinkcheck, the Lean reference checker, timed
+    separately. Certificates are summarised (size); with VLINK_CERT_DIR set
+    they are also stored there (gzipped JSON)."""
+    import gzip
+    import hashlib
+    from vlink import lean
     from vlink.check import linkcond
-    r = linkcond(isosig, sqlens, certify=True, **kw)
+    r = linkcond(isosig, sqlens, certify=True, lean=False, **kw)
     r.pop('necklace', None)
     cert = r.pop('certificate', None)
-    r['certificate_bytes'] = len(_json.dumps(cert)) if cert else 0
+    r['certificate_bytes'] = len(json.dumps(cert)) if cert else 0
+    if cert is not None and lean.binary():
+        t0 = time.time()
+        ok, _, msg = lean.check([cert])[0]
+        r['lean'] = dict(ok=ok, msg=msg, seconds=round(time.time() - t0, 2))
+        if ok != r['verified']:
+            r['lean_disagrees'] = True
+    d = os.environ.get('VLINK_CERT_DIR')
+    if d and cert is not None:
+        key = hashlib.sha1(json.dumps([isosig, list(sqlens), kw], sort_keys=True).encode())
+        path = os.path.join(d, key.hexdigest()[:16] + '.json.gz')
+        with gzip.open(path, 'wt') as f:
+            json.dump(cert, f)
+        r['certificate_file'] = path
     return r
 
 

@@ -52,3 +52,22 @@ def lean_verdict(certificate, **meta):
         os.unlink(path)
     verdict, claim, msg = (p.stdout.strip().split(' ', 2) + ['', ''])[:3]
     return dict(meta, ok=verdict == 'ACCEPT', claim=claim, msg=msg)
+
+
+def shape_metrics(isosig, shape, limit=100000, timeout=600.0, **meta):
+    """All metrics of one shape satisfying the edge condition (or as many as
+    found before limit / timeout): counts and the metrics themselves."""
+    import sys
+    sys.path.insert(0, os.path.join(HERE, 'controls'))
+    from shape_metrics import enumerate_metrics
+    metrics, complete = enumerate_metrics(isosig, shape, limit=limit, timeout=timeout)
+    return dict(meta, isosig=isosig, shape=shape, n=len(metrics), complete=complete,
+                metrics=metrics[:1000])
+
+
+def shape_metrics_batch(isosigs, shape, limit=100000, timeout=3600.0, **meta):
+    """shape_metrics for several triangulations (one queue task per batch)."""
+    out = [shape_metrics(sig, shape, limit=limit, timeout=timeout) for sig in isosigs]
+    return dict(meta, shape=shape, n_triangulations=len(out),
+                incomplete=[r['isosig'] for r in out if not r['complete']],
+                found=[r for r in out if r['n']])

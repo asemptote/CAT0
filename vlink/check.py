@@ -8,7 +8,11 @@ linkcond runs the full test (tetrahedron validity, edge condition, vertex
 links). Every False answer comes with a certificate (kernel.CERT_FORMAT) that
 the kernel checks before the answer is returned ('verified': True); a False
 answer whose certificate the kernel rejects is never returned (InternalError).
-True answers are not yet certified ('verified': False).
+With certify=True a True answer gets a certificate too (certify.py).
+
+When the Lean checker is built (vlink/lean.py) every certificate is also
+checked by it, the reference checker, and its verdict recorded as 'lean';
+a disagreement between the two kernels raises InternalError.
 
 vertex_linkcond is the vertex-link search on its own (same contract as
 gallery.vertex_linkcond). Both raise necklace.UndecidedError instead of
@@ -54,13 +58,14 @@ def vertex_linkcond(isosig, sqlens, findall=False, allow_repeats=True, stop_at_s
 
 
 def linkcond(isosig, sqlens, allow_repeats=True, stop_at_start=False, pi_beads=True,
-             certify=False, exact_only=False):
+             certify=False, exact_only=False, lean=None):
     """Full local CAT(0) test (Gromov's link condition): every tetrahedron
     valid, every edge link of length >= 2*pi, every vertex link without a
     short closed geodesic.
 
     Returns dict(result, reason in {None, 'invalid', 'edge', 'vertex'},
-    certificate (False answers), verified, ...)."""
+    certificate (False answers), verified, ...). lean: also check the
+    certificate with vlinkcheck (None: if it is built)."""
     rep = edge_report(isosig, sqlens)
     if not rep['valid']:
         r = dict(result=False, reason='invalid', degenerate_tet=rep['degenerate_tet'])
@@ -89,6 +94,16 @@ def linkcond(isosig, sqlens, allow_repeats=True, stop_at_start=False, pi_beads=T
             r['verified'], r['kernel'] = True, msg
         else:
             r['certificate_error'] = msg
+    if lean is None:
+        from . import lean as _lean
+        lean = _lean.binary() is not None
+    if lean and r['certificate'] is not None:
+        from . import lean as _lean
+        ok, _, msg = _lean.check([r['certificate']])[0]
+        r['lean'] = dict(ok=ok, msg=msg)
+        if ok != r['verified']:
+            raise InternalError('the Lean and Python kernels disagree: lean %s (%s), python %s'
+                                % (ok, msg, r.get('kernel', r.get('certificate_error'))))
     return r
 
 
