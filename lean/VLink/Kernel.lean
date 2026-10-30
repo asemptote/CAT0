@@ -192,8 +192,11 @@ def Geometry.dihedral (g : Geometry) (tet i j : Nat) : MQ × MQ :=
   let nw := (G[2]!)[2]! - ew * ew / ee
   (MQ.ofRat a, MQ.ofRat (nu * nw - a * a))
 
-def Geometry.edgeAngle (g : Geometry) (e : Nat) : KM AngleSum :=
-  angleSum (g.T.edges[e]!.map fun (tet, k) => g.dihedral tet EDGES[k]!.1 EDGES[k]!.2)
+/-- `(a, b²)` of the dihedral angles around edge `e`. -/
+def Geometry.edgeAngles (g : Geometry) (e : Nat) : Array (MQ × MQ) :=
+  g.T.edges[e]!.map fun (tet, k) => g.dihedral tet EDGES[k]!.1 EDGES[k]!.2
+
+def Geometry.edgeAngle (g : Geometry) (e : Nat) : KM AngleSum := angleSum (g.edgeAngles e)
 
 /-! ### Vertex links -/
 
@@ -692,46 +695,157 @@ def enumerateBeads (L : Link) (piBeads : Bool) : KM (Array Bead) := do
 
 /-! ### Junctions -/
 
-/-- The angle at the junction `bin → bout` on side `k ∈ {1, 2}`. -/
-def junctionSide (L : Link) (bin bout : Bead) (k : Nat) : KM AngleSum := do
+lemma angleAdd_ok {st st' : AngleSum} {ab : MQ × MQ} (h : angleAdd st ab = .ok st') :
+    st.add ab.1 ab.2 = some st' := by
+  unfold angleAdd at h
+  split at h
+  · cases h; assumption
+  · cases h
+
+lemma angleLeq_ok {x y : AngleSum} {b : Bool} (h : angleLeq x y = .ok b) : x.leq y = some b := by
+  unfold angleLeq at h
+  split at h
+  · cases h; assumption
+  · cases h
+
+/-- The fan walk around the junction's link vertex: from corner `c` of
+triangle `t`, crossing the edge opposite `ent`, through the corners of the
+triangles at that link vertex until the outgoing bead's corner `(t0, d0)`.
+Returns the exact sum and the list of angles added (stopping as soon as the
+sum is `≥ π`, as `kernel.junction_side` does). -/
+def fanWalk (L : Link) (t0 d0 : Nat) (outG : Gram) (outDir : V3) :
+    Nat → Nat → Nat → Nat → Nat → AngleSum → List (MQ × MQ) → KM (AngleSum × List (MQ × MQ))
+  | 0, _, _, _, _, _, _ => .error "junction fan walk did not reach the outgoing triangle"
+  | fuel + 1, t, c, ent, ex, acc, l =>
+    if atLeast acc 1 then .ok (acc, l)
+    else
+      let g := (L.glue[t]!)[ent]!
+      let t' := (L.adj[t]!)[ent]!
+      let c' := g[c]!
+      let ent' := g[ex]!
+      let ex' := 3 - c' - ent'
+      if (t', c') = (t0, d0) then
+        match angleAdd acc (tangentAngle outG E3[d0]! E3[ent']! outDir) with
+        | .ok acc' => .ok (acc', l ++ [tangentAngle outG E3[d0]! E3[ent']! outDir])
+        | .error e => .error e
+      else
+        match angleAdd acc (tangentAngle L.G[t']! E3[c']! E3[ent']! E3[ex']!) with
+        | .ok acc' => fanWalk L t0 d0 outG outDir fuel t' c' ent' ex' acc'
+            (l ++ [tangentAngle L.G[t']! E3[c']! E3[ent']! E3[ex']!])
+        | .error e => .error e
+
+lemma sum_append_angle (l : List (MQ × MQ)) (ab : MQ × MQ) :
+    ((l ++ [ab]).map fun p => angleOf p.1 p.2).sum =
+      (l.map fun p => angleOf p.1 p.2).sum + angleOf ab.1 ab.2 := by
+  simp
+
+theorem fanWalk_ok {L : Link} {t0 d0 : Nat} {outG : Gram} {outDir : V3} :
+    ∀ (fuel t c ent ex : Nat) (acc : AngleSum) (l : List (MQ × MQ)) (r : AngleSum × List (MQ × MQ)),
+      acc.Rep ((l.map fun p => angleOf p.1 p.2).sum) →
+      fanWalk L t0 d0 outG outDir fuel t c ent ex acc l = .ok r →
+      r.1.Rep ((r.2.map fun p => angleOf p.1 p.2).sum) := by
+  intro fuel
+  induction fuel with
+  | zero => intro t c ent ex acc l r _ h; simp [fanWalk] at h
+  | succ fuel ih =>
+    intro t c ent ex acc l r hr h
+    unfold fanWalk at h
+    dsimp only at h
+    split_ifs at h with hat hcorner
+    · cases h; exact hr
+    · split at h
+      · rename_i acc' hadd
+        cases h
+        rw [sum_append_angle]
+        exact AngleSum.add_sound hr (angleAdd_ok hadd)
+      · cases h
+    · split at h
+      · rename_i acc' hadd
+        refine ih _ _ _ _ acc' _ r ?_ h
+        rw [sum_append_angle]
+        exact AngleSum.add_sound hr (angleAdd_ok hadd)
+      · cases h
+
+/-- Is the outgoing direction `X` strictly inside the corner at `W` between
+`u` and the ray toward `Py`? (Their angles add up exactly.) -/
+def insideCorner (G : Gram) (W u X Py : V3) : KM Bool :=
+  match angleSum #[tangentAngle G W u X, tangentAngle G W X Py],
+      angleSum #[tangentAngle G W u Py] with
+  | .ok s12, .ok s3 =>
+    if s12.h = s3.h then
+      match twSgn (Tw.sub (Tw.mul s12.im s3.re) (Tw.mul s12.re s3.im)) with
+      | .ok 0 =>
+        match twSgn (Tw.add (Tw.mul s12.re s3.re) (Tw.mul s12.im s3.im)) with
+        | .ok re => .ok (decide (re > 0))
+        | .error e => .error e
+      | .ok _ => .ok false
+      | .error e => .error e
+    else .ok false
+  | .error e, _ => .error e
+  | _, .error e => .error e
+
+/-- The angle at the junction `bin → bout` on side `k ∈ {1, 2}`, with the
+corner angles it sums. -/
+def junctionFan (L : Link) (bin bout : Bead) (k : Nat) : KM (AngleSum × List (MQ × MQ)) :=
   let tm := bin.ts.back!
   let rm := bin.stop
   let t0 := bout.ts[0]!
   let d0 := bout.start
   let P := bin.pos.back!
-  let Gin := bin.G
   let W := P[rm]!
   let u := bin.inDir
   let d := (rm + k) % 3
   let y := 3 - rm - d
-  if (tm, rm) == (t0, d0) then
-    -- is the outgoing direction inside this corner, between u and ray(y)?
-    let X : Vec := V3.add (V3.add (V3.scale bout.outDir.x P[0]!) (V3.scale bout.outDir.y P[1]!))
+  let first := tangentAngle bin.G W u P[y]!
+  let general : KM (AngleSum × List (MQ × MQ)) :=
+    match angleSum #[first] with
+    | .ok acc => fanWalk L t0 d0 bout.G bout.outDir (4 * L.n + 2) tm rm d y acc [first]
+    | .error e => .error e
+  if (tm, rm) = (t0, d0) then
+    -- the outgoing direction, in this triangle's developed frame
+    let X : V3 := V3.add (V3.add (V3.scale bout.outDir.x P[0]!) (V3.scale bout.outDir.y P[1]!))
       (V3.scale bout.outDir.z P[2]!)
-    let a1b1 := tangentAngle Gin W u X
-    let s12 ← angleSum #[a1b1, tangentAngle Gin W X P[y]!]
-    let s3 ← angleSum #[tangentAngle Gin W u P[y]!]
-    if s12.h == s3.h then
-      let im ← twSgn (Tw.sub (Tw.mul s12.im s3.re) (Tw.mul s12.re s3.im))
-      if im == 0 then
-        let re ← twSgn (Tw.add (Tw.mul s12.re s3.re) (Tw.mul s12.im s3.im))
-        if re > 0 then return ← angleSum #[a1b1]
-  let mut acc ← angleSum #[tangentAngle Gin W u P[y]!]
-  let mut t := tm
-  let mut c := rm
-  let mut ent := d
-  let mut ex := y
-  for _ in [0:4 * L.n + 2] do
-    if atLeast acc 1 then return acc
-    let g := (L.glue[t]!)[ent]!
-    t := (L.adj[t]!)[ent]!
-    c := g[c]!
-    ent := g[ex]!
-    ex := 3 - c - ent
-    if (t, c) == (t0, d0) then
-      return ← angleAdd acc (tangentAngle bout.G E3[d0]! E3[ent]! bout.outDir)
-    acc ← angleAdd acc (tangentAngle L.G[t]! E3[c]! E3[ent]! E3[ex]!)
-  throw "junction fan walk did not reach the outgoing triangle"
+    match insideCorner bin.G W u X P[y]! with
+    | .ok true =>
+      match angleSum #[tangentAngle bin.G W u X] with
+      | .ok s => .ok (s, [tangentAngle bin.G W u X])
+      | .error e => .error e
+    | .ok false => general
+    | .error e => .error e
+  else general
+
+/-- The exact angle at a junction side is the sum of the corner angles listed. -/
+theorem junctionFan_ok {L : Link} {bin bout : Bead} {k : Nat} {r : AngleSum × List (MQ × MQ)}
+    (h : junctionFan L bin bout k = .ok r) :
+    r.1.Rep ((r.2.map fun p => angleOf p.1 p.2).sum) := by
+  have hgen : ∀ (first : MQ × MQ) (t0 d0 tm rm d y : Nat),
+      (match angleSum #[first] with
+        | .ok acc => fanWalk L t0 d0 bout.G bout.outDir (4 * L.n + 2) tm rm d y acc [first]
+        | .error e => .error e) = .ok r →
+      r.1.Rep ((r.2.map fun p => angleOf p.1 p.2).sum) := by
+    intro first t0 d0 tm rm d y hg
+    split at hg
+    · rename_i acc hacc
+      have := angleSum_ok hacc
+      exact fanWalk_ok _ _ _ _ _ acc [first] r (by simpa using this) hg
+    · cases hg
+  unfold junctionFan at h
+  dsimp only at h
+  split_ifs at h with hsame
+  · split at h
+    · split at h
+      · rename_i s hs
+        cases h
+        simpa using angleSum_ok hs
+      · cases h
+    · exact hgen _ _ _ _ _ _ _ h
+    · cases h
+  · exact hgen _ _ _ _ _ _ _ h
+
+def junctionSide (L : Link) (bin bout : Bead) (k : Nat) : KM AngleSum :=
+  match junctionFan L bin bout k with
+  | .ok r => .ok r.1
+  | .error e => .error e
 
 /-- Angle `≥ π` on both sides of the junction `bin → bout`. -/
 def junctionOk (L : Link) (bin bout : Bead) : KM Bool := do
@@ -854,61 +968,85 @@ structure FalseCert where
   sqlens : Array ℚ
   reason : Reason
 
-def checkFalse (c : FalseCert) : KM String := do
-  let T ← Tri.ofIsoSig c.isosig
-  let geo ← Geometry.make T c.sqlens
+def startV (L : Link) (b : Bead) : Nat := (L.lv[b.ts[0]!]!)[b.start]!
+def endV (L : Link) (b : Bead) : Nat := (L.lv[b.ts.back!]!)[b.stop]!
+
+/-- Every tetrahedron is valid. -/
+def tetsValidK (T : Tri) (geo : Geometry) (msg : Nat → String) : KM Unit :=
+  forallK (List.range T.n) fun t => if geo.tetValid t then .ok () else .error (msg t)
+
+lemma tetsValidK_ok {T : Tri} {geo : Geometry} {msg : Nat → String}
+    (h : tetsValidK T geo msg = .ok ()) : ∀ t < T.n, geo.tetValid t = true := by
+  intro t ht
+  have := forallK_ok h t (List.mem_range.mpr ht)
+  by_contra hv
+  rw [if_neg hv] at this
+  cases this
+
+/-- Both sides of the junction `b1 → b2` have angle `≥ π`. -/
+def junctionPasses (L : Link) (b1 b2 : Bead) (k : Nat) : KM Unit :=
+  forallK [1, 2] fun side =>
+    match junctionSide L b1 b2 side with
+    | .ok acc => if atLeast acc 1 then .ok () else .error s!"junction {k}: angle < pi on side {side}"
+    | .error e => .error e
+
+/-- The beads meet in a cycle, with every junction passing. -/
+def necklaceOk (L : Link) (beads : List Bead) : KM Unit :=
+  forallK (List.range beads.length) fun k =>
+    if endV L beads[k]! ≠ startV L beads[(k + 1) % beads.length]! then
+      .error s!"beads {k} and {(k + 1) % beads.length} do not meet"
+    else junctionPasses L beads[k]! beads[(k + 1) % beads.length]! k
+
+/-- Check a certificate that the metric is not locally CAT(0). -/
+def checkFalse (c : FalseCert) : KM String :=
+  match Tri.ofIsoSig c.isosig with
+  | .error e => .error e
+  | .ok T =>
+  match Geometry.make T c.sqlens with
+  | .error e => .error e
+  | .ok geo =>
   match c.reason with
   | .invalid t =>
-    if t ≥ T.n || geo.tetValid t then throw s!"tetrahedron {t} is valid"
-    return s!"tetrahedron {t} is degenerate"
-  | r =>
-    for t in [0:T.n] do
-      if !geo.tetValid t then throw s!"tetrahedron {t} is degenerate (use reason \"invalid\")"
-    match r with
-    | .edge e =>
-      if e ≥ T.edges.size then throw "bad edge"
-      if atLeast (← geo.edgeAngle e) 2 then throw s!"edge {e} has dihedral sum >= 2*pi"
-      return s!"edge {e} has dihedral sum < 2*pi"
-    | .vertex iv necklace =>
-      if iv ≥ T.corners.size then throw "bad vertex"
-      let L ← Link.make geo iv
-      let beads ← necklace.mapM (checkBead L)
-      if beads.size = 0 then throw "empty necklace"
-      if atLeast (← totalLength beads) 2 then throw "necklace length >= 2*pi"
-      let m := beads.size
-      for k in [0:m] do
-        let b1 := beads[k]!
-        let b2 := beads[(k + 1) % m]!
-        if (L.lv[b1.ts.back!]!)[b1.stop]! ≠ (L.lv[b2.ts[0]!]!)[b2.start]! then
-          throw s!"beads {k} and {(k + 1) % m} do not meet"
-        for side in [1, 2] do
-          if !atLeast (← junctionSide L b1 b2 side) 1 then
-            throw s!"junction {k}: angle < pi on side {side}"
-      return s!"vertex {iv}: necklace of {m} beads, length < 2*pi, all junctions >= pi"
-    | .invalid _ => throw "unreachable"
+    if t ≥ T.n || geo.tetValid t then .error s!"tetrahedron {t} is valid"
+    else .ok s!"tetrahedron {t} is degenerate"
+  | .edge e =>
+    match tetsValidK T geo (fun t => s!"tetrahedron {t} is degenerate (use reason \"invalid\")") with
+    | .error err => .error err
+    | .ok () =>
+      if e ≥ T.edges.size then .error "bad edge"
+      else match geo.edgeAngle e with
+        | .error err => .error err
+        | .ok acc =>
+          if atLeast acc 2 then .error s!"edge {e} has dihedral sum >= 2*pi"
+          else .ok s!"edge {e} has dihedral sum < 2*pi"
+  | .vertex iv necklace =>
+    match tetsValidK T geo (fun t => s!"tetrahedron {t} is degenerate (use reason \"invalid\")") with
+    | .error err => .error err
+    | .ok () =>
+      if iv ≥ T.corners.size then .error "bad vertex"
+      else match Link.make geo iv with
+        | .error err => .error err
+        | .ok L =>
+          match mapK (checkBead L) necklace.toList with
+          | .error err => .error err
+          | .ok beads =>
+            if beads.isEmpty then .error "empty necklace"
+            else match totalLength beads.toArray with
+              | .error err => .error err
+              | .ok tot =>
+                if atLeast tot 2 then .error "necklace length >= 2*pi"
+                else match necklaceOk L beads with
+                  | .error err => .error err
+                  | .ok () =>
+                    .ok s!"vertex {iv}: necklace of {beads.length} beads, length < 2*pi, all junctions >= pi"
 
 /-! ### True certificates (docs/true_certificates.md) -/
 
 def LEMMA_4_9 : String := "Elder-McCammond-Meier 2003, Lemma 4.9"
 
-lemma angleAdd_ok {st st' : AngleSum} {ab : MQ × MQ} (h : angleAdd st ab = .ok st') :
-    st.add ab.1 ab.2 = some st' := by
-  unfold angleAdd at h
-  split at h
-  · cases h; assumption
-  · cases h
-
-lemma angleLeq_ok {x y : AngleSum} {b : Bool} (h : angleLeq x y = .ok b) : x.leq y = some b := by
-  unfold angleLeq at h
-  split at h
-  · cases h; assumption
-  · cases h
-
 lemma angleOf_nonneg (a b2 : MQ) : 0 ≤ angleOf a b2 :=
   Complex.arg_nonneg_iff.mpr (Real.sqrt_nonneg _)
 
-def startV (L : Link) (b : Bead) : Nat := (L.lv[b.ts[0]!]!)[b.start]!
-def endV (L : Link) (b : Bead) : Nat := (L.lv[b.ts.back!]!)[b.stop]!
 
 def junctionEntry (L : Link) (beads : Array Bead) (x y : Nat) : KM (Nat × Bool) :=
   if beads[x]!.pi || beads[y]!.pi then .ok (y, true)
@@ -1177,27 +1315,52 @@ structure TrueCert where
   /-- per vertex: number of beads and the trees -/
   vertices : Array (Nat × Nat × Std.HashMap Nat (Std.HashMap Nat Nat))
 
-def checkTrue (c : TrueCert) : KM String := do
+/-- Every edge has dihedral sum `≥ 2π`. -/
+def edgesOkK (T : Tri) (geo : Geometry) : KM Unit :=
+  forallK (List.range T.edges.size) fun e =>
+    match geo.edgeAngle e with
+    | .ok acc => if atLeast acc 2 then .ok () else .error s!"edge {e} has dihedral sum < 2*pi"
+    | .error err => .error err
+
+/-- One vertex of a True certificate: the kernel's own bead enumeration, and
+the shortest-path trees. -/
+def vertexOkK (geo : Geometry) (piBeads : Bool)
+    (v : Nat × Nat × Std.HashMap Nat (Std.HashMap Nat Nat)) : KM Unit :=
+  match Link.make geo v.1 with
+  | .error e => .error e
+  | .ok L =>
+    match enumerateBeads L piBeads with
+    | .error e => .error e
+    | .ok beads =>
+      if v.2.1 ≠ beads.size then
+        .error s!"vertex {v.1}: bead count differs from the kernel enumeration"
+      else checkVertexTrees L beads v.2.2
+
+def assumptionsNote (a : Array String) : String :=
+  if a.isEmpty then "" else s!" (assuming {"; ".intercalate a.toList})"
+
+/-- Check a certificate that the metric is locally CAT(0). -/
+def checkTrue (c : TrueCert) : KM String :=
   if !c.piBeads && !c.assumptions.contains LEMMA_4_9 then
-    throw s!"pi_beads=False requires the assumption: {LEMMA_4_9}"
-  if !c.allowRepeats then throw "allow_repeats=False relies on an unproven rule"
-  let T ← Tri.ofIsoSig c.isosig
-  let geo ← Geometry.make T c.sqlens
-  for t in [0:T.n] do
-    if !geo.tetValid t then throw s!"tetrahedron {t} is degenerate"
-  for e in [0:T.edges.size] do
-    if !atLeast (← geo.edgeAngle e) 2 then throw s!"edge {e} has dihedral sum < 2*pi"
-  let vs := c.vertices.qsort (fun a b => a.1 < b.1)
-  if vs.map (·.1) != (List.range T.corners.size).toArray then
-    throw "certificate must cover every vertex"
-  for (iv, nBeads, trees) in vs do
-    let L ← Link.make geo iv
-    let beads ← enumerateBeads L c.piBeads
-    if nBeads ≠ beads.size then
-      throw s!"vertex {iv}: bead count differs from the kernel enumeration"
-    checkVertexTrees L beads trees
-  let note := if c.assumptions.isEmpty then "" else
-    s!" (assuming {"; ".intercalate c.assumptions.toList})"
-  return s!"locally CAT(0): {T.n} tetrahedra valid, all edges >= 2*pi, no short necklace at {vs.size} vertices{note}"
+    .error s!"pi_beads=False requires the assumption: {LEMMA_4_9}"
+  else if !c.allowRepeats then .error "allow_repeats=False relies on an unproven rule"
+  else match Tri.ofIsoSig c.isosig with
+  | .error e => .error e
+  | .ok T =>
+  match Geometry.make T c.sqlens with
+  | .error e => .error e
+  | .ok geo =>
+  match tetsValidK T geo (fun t => s!"tetrahedron {t} is degenerate") with
+  | .error e => .error e
+  | .ok () =>
+  match edgesOkK T geo with
+  | .error e => .error e
+  | .ok () =>
+    let vs := c.vertices.qsort (fun a b => a.1 < b.1)
+    if vs.toList.map (·.1) ≠ List.range T.corners.size then .error "certificate must cover every vertex"
+    else match forallK vs.toList (vertexOkK geo c.piBeads) with
+      | .error e => .error e
+      | .ok () =>
+        .ok s!"locally CAT(0): {T.n} tetrahedra valid, all edges >= 2*pi, no short necklace at {vs.size} vertices{assumptionsNote c.assumptions}"
 
 end VLink

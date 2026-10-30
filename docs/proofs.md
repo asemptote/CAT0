@@ -222,6 +222,14 @@ only make the certificate harder to satisfy, never unsound.
 ## 7. What remains trusted
 
 - The cited results in §0 (and, with `pi_beads=False`, EMM Lemma 4.9).
+  In the Lean formalisation (`lean/VLink/Soundness.lean`) these are five
+  axioms about the opaque predicate `LocallyCAT0`; the soundness of both
+  certificate checks is proved from them (`checkFalse_sound`,
+  `checkTrue_sound`), together with most of this note — §1 (arithmetic, angle
+  sums), §2 (development), §4 (bead checks), §5 (junction sums), §6 (trees) —
+  as Lean theorems. Still argued only here: positive definiteness of a valid
+  tetrahedron's Gram matrix (§2), the order of the fan walk (§5) and bead
+  enumeration completeness (§3).
 - That `tri.py` decodes isosigs as Regina does (tested, §2: the statement
   "isosig X with squared lengths L" refers to Regina's triangulation and edge
   numbering). Regina itself is no longer used by the kernel.

@@ -13,8 +13,28 @@ certificates built on it.
 | L3 beads | `VLink/Kernel.lean` | proved: an accepted bead crosses every interior edge of its developed strip (`checkBead_ok`); exact angle sums represent the sum of their angles (`angleSum_ok`) |
 | L4 True certificates | `VLink/Necklace.lean`, `VLink/Kernel.lean` | proved: if every tree's values satisfy the checked inequalities, every necklace (a `Cycle` of beads, each passing to the next) has length `≥ 2π` (`no_short_necklace`); the kernel's tree check establishes exactly those inequalities for the exact angle sums, so when it passes no necklace at that vertex is shorter than `2π` (`checkVertexTrees_ok`); an exact angle sum represents a single angle (`AngleSum.rep_unique`) |
 | L3 development | `VLink/Develop.lean`, `VLink/Kernel.lean` | proved: each step places the neighbouring link triangle isometrically, on the far side of the shared edge (`step_iso`, `stepWith_iso`), so in the frame of a strip's first triangle every developed triangle has exactly its own Gram matrix (`develop_iso`) |
-| L3 junctions, L4 False certificates | `VLink/Kernel.lean`, `VLink/Cert.lean` | executable; built on the proved layers |
-| bridge to CAT(0) | `docs/proofs.md` | on paper: cited results (Gromov, Bowditch, Elder–McCammond–Meier) and the kernel's geometric lemmas |
+| L3 junctions | `VLink/Kernel.lean` | proved: the exact angle at each side of a junction is the sum of the corner angles listed by the fan walk around the link vertex (`junctionFan_ok`), each the true tangent angle (`tangent_angle`) |
+| L4 soundness | `VLink/Soundness.lean` | proved from the cited theorems: an accepted False certificate implies `¬ LocallyCAT0` (`checkFalse_sound`), an accepted True certificate implies `LocallyCAT0` (`checkTrue_sound`) |
+
+`LocallyCAT0 isosig sqlens` is opaque (Mathlib has no piecewise Euclidean
+complexes); five axioms, stated in terms of what the kernel computes,
+characterise it (`VLink/Soundness.lean`): a degenerate tetrahedron or a short
+edge rules it out; a short necklace (`ShortNecklace`) rules it out; valid
+tetrahedra, edges `≥ 2π` and no short necklace of the enumerated beads
+(`NoShortNecklace`, with or without π-beads) imply it. `#print axioms`
+confirms the two soundness theorems use exactly these and Lean's standard
+axioms (`propext`, `Classical.choice`, `Quot.sound`), no `sorry`.
+
+The axioms are justified by the cited theorems (Gromov's link condition,
+Bridson–Haefliger; Bowditch; Elder–McCammond; Elder–McCammond–Meier) together
+with facts proved here — exact arithmetic and angle sums, isometric
+development (`develop_iso`), geodesics crossing their strips' edges
+(`checkBead_ok`, `crosses_ok_*`), lengths and corner angles (`length_angle`,
+`tangent_angle`), junction sums (`junctionFan_ok`), shortest-path trees
+(`checkVertexTrees_ok`) — and three facts argued on paper
+(`docs/proofs.md`): the fan walk visits the corners between the two
+directions in order (§5), a valid tetrahedron's Gram matrix is positive
+definite (§2), and bead enumeration is complete (§3).
 
 No proof uses linear independence of square roots or any normal form: zero
 tests go through the sign, and the sign algorithm is sound for any
@@ -69,14 +89,8 @@ everywhere.
 
 ## Next
 
-- The Gram matrix of a valid tetrahedron is positive definite (so
-  `parallel_ok` reads as "same / opposite direction"). Symmetry is checked
-  by the kernel (`symm3`, in `mkTrans`).
-- Junctions: `junctionSide` sums the corner angles around the link vertex
-  (`tangent_angle` for each), so `≥ π` is the local-geodesic condition; then
-  a passing entry of `junctionRow` (`junctionRow_mem`) means the necklace is
-  a local geodesic at that junction.
-- The certificate theorems: `checkFalse c = ok → ¬ LinkCondition` and
-  `checkTrue c = ok → LinkCondition`, with the cited results (Gromov,
-  Bowditch, Elder–McCammond–Meier, bead enumeration completeness) as named
-  axioms.
+- Prove the three paper facts above in Lean, shrinking the axioms to the
+  cited theorems alone: positive definiteness (Sylvester's criterion for
+  3×3, from the tetrahedron's Gram determinants), the fan walk's order around
+  the link vertex, and bead-enumeration completeness (the visible-interval
+  lemma).
