@@ -1,5 +1,6 @@
 import VLink.Vec
 import VLink.Tri
+import VLink.Necklace
 
 /-!
 # The kernel's geometry and certificate checks (layers L3–L4, executable)
@@ -563,23 +564,113 @@ def checkFalse (c : FalseCert) : KM String := do
 
 def LEMMA_4_9 : String := "Elder-McCammond-Meier 2003, Lemma 4.9"
 
-/-- For each pair `(x, y)` with `x` ending where `y` starts: does the junction
-pass? Pairs involving a π-bead count as passing (conservative). -/
-def junctionTable (L : Link) (beads : Array Bead) : KM (Std.HashMap (Nat × Nat) Bool) := do
-  let mut byStart : Std.HashMap Nat (Array Nat) := {}
-  for i in [0:beads.size] do
-    let b := beads[i]!
-    let w := (L.lv[b.ts[0]!]!)[b.start]!
-    byStart := byStart.insert w ((byStart.getD w #[]).push i)
-  let mut table := {}
-  for x in [0:beads.size] do
-    let bx := beads[x]!
-    let w := (L.lv[bx.ts.back!]!)[bx.stop]!
-    for y in byStart.getD w #[] do
-      let by_ := beads[y]!
-      let ok ← if bx.pi || by_.pi then pure true else junctionOk L bx by_
-      table := table.insert (x, y) ok
-  return table
+/-- `f` succeeds on every element of the list. -/
+def forallK {α : Type} : List α → (α → KM Unit) → KM Unit
+  | [], _ => .ok ()
+  | a :: l, f =>
+    match f a with
+    | .ok () => forallK l f
+    | .error e => .error e
+
+lemma forallK_ok {α : Type} {l : List α} {f : α → KM Unit} (h : forallK l f = .ok ()) :
+    ∀ a ∈ l, f a = .ok () := by
+  induction l with
+  | nil => simp
+  | cons a l ih =>
+    unfold forallK at h
+    split at h
+    · rename_i ha
+      intro b hb
+      rcases List.mem_cons.mp hb with rfl | hb
+      · exact ha
+      · exact ih h b hb
+    · cases h
+
+/-- `List.mapM` in `KM`, with a usable specification. -/
+def mapK {α β : Type} (f : α → KM β) : List α → KM (List β)
+  | [] => .ok []
+  | a :: l =>
+    match f a, mapK f l with
+    | .ok b, .ok bs => .ok (b :: bs)
+    | .error e, _ => .error e
+    | _, .error e => .error e
+
+lemma mapK_ok {α β : Type} {f : α → KM β} {l : List α} {l' : List β}
+    (h : mapK f l = .ok l') : List.Forall₂ (fun a b => f a = .ok b) l l' := by
+  induction l generalizing l' with
+  | nil => cases h; exact List.Forall₂.nil
+  | cons a l ih =>
+    unfold mapK at h
+    split at h
+    · rename_i b bs ha hl
+      cases h
+      exact List.Forall₂.cons ha (ih hl)
+    · cases h
+    · cases h
+
+lemma forall2_mem_right {α β : Type} {R : α → β → Prop} {l : List α} {l' : List β}
+    (h : List.Forall₂ R l l') {b : β} (hb : b ∈ l') : ∃ a ∈ l, R a b := by
+  induction h with
+  | nil => simp at hb
+  | cons hab _ ih =>
+    rcases List.mem_cons.mp hb with rfl | hb
+    · exact ⟨_, List.mem_cons_self, hab⟩
+    · obtain ⟨a, ha, hR⟩ := ih hb
+      exact ⟨a, List.mem_cons_of_mem _ ha, hR⟩
+
+lemma angleAdd_ok {st st' : AngleSum} {ab : MQ × MQ} (h : angleAdd st ab = .ok st') :
+    st.add ab.1 ab.2 = some st' := by
+  unfold angleAdd at h
+  split at h
+  · cases h; assumption
+  · cases h
+
+lemma angleLeq_ok {x y : AngleSum} {b : Bool} (h : angleLeq x y = .ok b) : x.leq y = some b := by
+  unfold angleLeq at h
+  split at h
+  · cases h; assumption
+  · cases h
+
+lemma angleOf_nonneg (a b2 : MQ) : 0 ≤ angleOf a b2 :=
+  Complex.arg_nonneg_iff.mpr (Real.sqrt_nonneg _)
+
+def startV (L : Link) (b : Bead) : Nat := (L.lv[b.ts[0]!]!)[b.start]!
+def endV (L : Link) (b : Bead) : Nat := (L.lv[b.ts.back!]!)[b.stop]!
+
+def junctionEntry (L : Link) (beads : Array Bead) (x y : Nat) : KM (Nat × Bool) :=
+  if beads[x]!.pi || beads[y]!.pi then .ok (y, true)
+  else match junctionOk L beads[x]! beads[y]! with
+    | .ok ok => .ok (y, ok)
+    | .error e => .error e
+
+/-- Junctions out of bead `x`: every bead `y` starting where `x` ends, with
+whether the junction passes (angle `≥ π` on both sides). Pairs involving a
+π-bead count as passing (conservative). -/
+def junctionRow (L : Link) (beads : Array Bead) (x : Nat) : KM (List (Nat × Bool)) :=
+  mapK (junctionEntry L beads x)
+    ((List.range beads.size).filter (fun y => startV L beads[y]! == endV L beads[x]!))
+
+/-- `(y, true)` in the row of `x`: `y` starts where `x` ends and the junction passes. -/
+theorem junctionRow_mem {L : Link} {beads : Array Bead} {x : Nat} {row : List (Nat × Bool)}
+    (h : junctionRow L beads x = .ok row) {y : Nat} (hy : (y, true) ∈ row) :
+    y < beads.size ∧ startV L beads[y]! = endV L beads[x]! ∧
+      (beads[x]!.pi = true ∨ beads[y]!.pi = true ∨
+        junctionOk L beads[x]! beads[y]! = .ok true) := by
+  unfold junctionRow at h
+  obtain ⟨a, ha, hga⟩ := forall2_mem_right (mapK_ok h) hy
+  simp only [List.mem_filter, List.mem_range, beq_iff_eq] at ha
+  unfold junctionEntry at hga
+  split_ifs at hga with hpi
+  · simp only [Except.ok.injEq, Prod.mk.injEq, and_true] at hga
+    subst hga
+    simp only [Bool.or_eq_true] at hpi
+    exact ⟨ha.1, ha.2, by tauto⟩
+  · split at hga
+    · rename_i okv hj
+      simp only [Except.ok.injEq, Prod.mk.injEq] at hga
+      obtain ⟨rfl, rfl⟩ := hga
+      exact ⟨ha.1, ha.2, Or.inr (Or.inr hj)⟩
+    · cases hga
 
 /-- The chain `s .. x` of bead indices following predecessor pointers. -/
 def chainOf (tree : Std.HashMap Nat Nat) (s x : Nat) : KM (Array Nat) := do
@@ -592,44 +683,216 @@ def chainOf (tree : Std.HashMap Nat Nat) (s x : Nat) : KM (Array Nat) := do
     | none => throw "chain does not reach the root"
   throw "predecessor pointers contain a cycle"
 
-def checkVertexTrees (L : Link) (beads : Array Bead) (trees : Std.HashMap Nat (Std.HashMap Nat Nat)) :
-    KM Unit := do
-  let n := beads.size
-  let lens := beads.map beadLength
-  let J ← junctionTable L beads
-  let mut succ : Std.HashMap Nat (Array Nat) := {}
-  for ((x, y), ok) in J.toList do
-    if ok then succ := succ.insert x ((succ.getD x #[]).push y)
-  for s in [0:n] do
-    let tree := trees.getD s {}
-    for (x, _) in tree.toList do
-      if x ≤ s || x ≥ n then throw s!"tree of {s}: bad bead index"
-    -- exact chain sums, memoised per tree node
-    let mut sums : Std.HashMap Nat AngleSum := {}
-    sums := sums.insert s (← angleSum #[lens[s]!])
-    let mut nodes := #[s]
-    for (x, _) in tree.toList do
-      let c ← chainOf tree s x
-      for (u, w) in c.toList.zip c.toList.tail do
-        if !(J.getD (u, w) false) then
-          throw s!"tree of {s}: {u} -> {w} is not a passing junction"
-      sums := sums.insert x (← angleSum (c.map (lens[·]!)))
-      nodes := nodes.push x
-    for x in nodes do
-      let sx := sums.getD x AngleSum.zero
-      for y in succ.getD x #[] do
-        if y == s then
-          if !atLeast sx 2 then
-            throw s!"bead {s} closes a loop shorter than 2*pi through {x}"
-          continue
-        if y < s then continue
-        let sxy ← angleAdd sx lens[y]!
-        if atLeast sxy 2 then continue
-        match sums.get? y with
-        | none => throw s!"tree of {s}: {y} reachable via {x} but missing"
-        | some sy =>
-          if !(← angleLeq sy sxy) then
-            throw s!"tree of {s}: distance to {y} not a lower bound via {x}"
+def beadLen (beads : Array Bead) (y : Nat) : MQ × MQ := beadLength beads[y]!
+
+/-- One tree node `x` of the tree of `s`: its chain, checked to run along
+passing junctions, and the exact sum of the chain's lengths. -/
+def nodeEntry (beads : Array Bead) (Jt : List (List (Nat × Bool)))
+    (tree : Std.HashMap Nat Nat) (s : Nat) (xp : Nat × Nat) : KM (Nat × AngleSum) :=
+  if xp.1 ≤ s || xp.1 ≥ beads.size then .error s!"tree of {s}: bad bead index"
+  else match chainOf tree s xp.1 with
+    | .error e => .error e
+    | .ok c =>
+      match forallK (c.toList.zip c.toList.tail) (fun (uw : Nat × Nat) =>
+          if (Jt.getD uw.1 []).contains (uw.2, true) then .ok ()
+          else .error s!"tree of {s}: {uw.1} -> {uw.2} is not a passing junction") with
+      | .error e => .error e
+      | .ok () =>
+        match angleSum (c.map (beadLen beads)) with
+        | .ok sx => .ok (xp.1, sx)
+        | .error e => .error e
+
+lemma nodeEntry_rep {beads : Array Bead} {Jt : List (List (Nat × Bool))}
+    {tree : Std.HashMap Nat Nat} {s : Nat} {xp : Nat × Nat} {r : Nat × AngleSum}
+    (h : nodeEntry beads Jt tree s xp = .ok r) : ∃ Θ, r.2.Rep Θ := by
+  unfold nodeEntry at h
+  split_ifs at h
+  split at h
+  · cases h
+  · split at h
+    · cases h
+    · split at h
+      · rename_i sx hs
+        cases h
+        exact ⟨_, angleSum_ok hs⟩
+      · cases h
+
+/-- Tree nodes of the tree rooted at `s`, with the exact length sums of their
+chains (`s` itself first, with the length of bead `s`). -/
+def nodeSums (beads : Array Bead) (Jt : List (List (Nat × Bool)))
+    (tree : Std.HashMap Nat Nat) (s : Nat) : KM (List (Nat × AngleSum)) :=
+  match angleSum #[beadLen beads s], mapK (nodeEntry beads Jt tree s) tree.toList with
+  | .ok root, .ok rest => .ok ((s, root) :: rest)
+  | .error e, _ => .error e
+  | _, .error e => .error e
+
+/-- The inequalities at one tree node `xs = (x, sx)` of the tree of `s`. -/
+def checkNode (beads : Array Bead) (Jt : List (List (Nat × Bool)))
+    (sums : List (Nat × AngleSum)) (s : Nat) (xs : Nat × AngleSum) : KM Unit :=
+  forallK ((Jt.getD xs.1 []).filter (·.2)) fun yb =>
+    if yb.1 = s then
+      if atLeast xs.2 2 then .ok ()
+      else .error s!"bead {s} closes a loop shorter than 2*pi through {xs.1}"
+    else if yb.1 < s then .ok ()
+    else
+      match angleAdd xs.2 (beadLen beads yb.1) with
+      | .error e => .error e
+      | .ok sxy =>
+        if atLeast sxy 2 then .ok ()
+        else match sums.lookup yb.1 with
+          | none => .error s!"tree of {s}: {yb.1} reachable via {xs.1} but missing"
+          | some sy =>
+            match angleLeq sy sxy with
+            | .ok true => .ok ()
+            | .ok false => .error s!"tree of {s}: distance to {yb.1} not a lower bound via {xs.1}"
+            | .error e => .error e
+
+/-- Verify the shortest-path certificate for one vertex link. -/
+def checkVertexTrees (L : Link) (beads : Array Bead)
+    (trees : Std.HashMap Nat (Std.HashMap Nat Nat)) : KM Unit :=
+  match mapK (junctionRow L beads) (List.range beads.size) with
+  | .error e => .error e
+  | .ok Jt =>
+    forallK (List.range beads.size) fun s =>
+      match nodeSums beads Jt (trees.getD s {}) s with
+      | .error e => .error e
+      | .ok sums => forallK sums (checkNode beads Jt sums s)
+
+lemma lookup_mem {l : List (Nat × AngleSum)} {x : Nat} {st : AngleSum}
+    (h : l.lookup x = some st) : (x, st) ∈ l := by
+  induction l with
+  | nil => simp at h
+  | cons p l ih =>
+    obtain ⟨y, sy⟩ := p
+    by_cases hxy : x = y
+    · subst hxy
+      simp at h
+      subst h
+      exact List.mem_cons_self
+    · have : (x == y) = false := by simp [hxy]
+      simp only [List.lookup, this] at h
+      exact List.mem_cons_of_mem _ (ih h)
+
+/-- The nodes of the tree of `s` with their sums (empty if the tree failed). -/
+def sumsOf (beads : Array Bead) (Jt : List (List (Nat × Bool)))
+    (trees : Std.HashMap Nat (Std.HashMap Nat Nat)) (s : Nat) : List (Nat × AngleSum) :=
+  match nodeSums beads Jt (trees.getD s {}) s with
+  | .ok l => l
+  | .error _ => []
+
+lemma nodeSums_ok {beads : Array Bead} {Jt : List (List (Nat × Bool))}
+    {tree : Std.HashMap Nat Nat} {s : Nat} {sums : List (Nat × AngleSum)}
+    (h : nodeSums beads Jt tree s = .ok sums) :
+    (∃ root, sums.lookup s = some root ∧ root.Rep (angleOf (beadLen beads s).1 (beadLen beads s).2)) ∧
+      ∀ p ∈ sums, p.2.Rep p.2.value := by
+  unfold nodeSums at h
+  split at h
+  · rename_i root rest hroot hrest
+    simp only [Except.ok.injEq] at h
+    subst h
+    have h2 := angleSum_ok hroot
+    simp at h2
+    refine ⟨⟨root, by simp, h2⟩, ?_⟩
+    intro p hp
+    rcases List.mem_cons.mp hp with rfl | hp
+    · rw [AngleSum.value_eq h2]; exact h2
+    · obtain ⟨a, -, ha⟩ := forall2_mem_right (mapK_ok hrest) hp
+      obtain ⟨Θ, hΘ⟩ := nodeEntry_rep ha
+      rw [AngleSum.value_eq hΘ]; exact hΘ
+  · cases h
+  · cases h
+
+/-- Soundness of True certificates at one vertex: when the tree check
+passes, every necklace — a cyclic sequence of beads, each passing to the
+next — has total length at least `2π`. -/
+theorem checkVertexTrees_ok {L : Link} {beads : Array Bead}
+    {trees : Std.HashMap Nat (Std.HashMap Nat Nat)} (h : checkVertexTrees L beads trees = .ok ()) :
+    ∃ Jt : List (List (Nat × Bool)),
+      (∀ x < beads.size, junctionRow L beads x = .ok (Jt.getD x [])) ∧
+      ∀ l : List ℕ, l ≠ [] → (∀ i ∈ l, i < beads.size) →
+        (l : Cycle ℕ).Chain (fun x y => (y, true) ∈ Jt.getD x []) →
+        2 * Real.pi ≤ (l.map fun i => angleOf (beadLen beads i).1 (beadLen beads i).2).sum := by
+  unfold checkVertexTrees at h
+  split at h
+  · cases h
+  rename_i Jt hJt
+  refine ⟨Jt, ?_, ?_⟩
+  · intro x hx
+    have hf := mapK_ok hJt
+    have hlen := hf.length_eq
+    simp only [List.length_range] at hlen
+    rw [List.getD_eq_getElem _ _ (by omega)]
+    have := (List.forall₂_iff_get.mp hf).2 x (by simp [hx]) (by omega)
+    simpa using this
+  intro l hl hn hc
+  have hall := forallK_ok h
+  have hs : ∀ s < beads.size, nodeSums beads Jt (trees.getD s {}) s = .ok (sumsOf beads Jt trees s) ∧
+      forallK (sumsOf beads Jt trees s) (checkNode beads Jt (sumsOf beads Jt trees s) s) = .ok () := by
+    intro s hsn
+    have := hall s (List.mem_range.mpr hsn)
+    split at this
+    · cases this
+    · rename_i l' hl'
+      simp only [sumsOf, hl']
+      exact ⟨trivial, this⟩
+  have hd : ∀ s < beads.size, ∀ x st, (sumsOf beads Jt trees s).lookup x = some st →
+      st.Rep (((sumsOf beads Jt trees s).lookup x).elim 0 AngleSum.value) ∧
+        (x, st) ∈ sumsOf beads Jt trees s := by
+    intro s hsn x st hx
+    have hm := lookup_mem hx
+    refine ⟨?_, hm⟩
+    simp only [hx, Option.elim]
+    exact (nodeSums_ok (hs s hsn).1).2 _ hm
+  refine no_short_necklace (n := beads.size)
+    (len := fun i => angleOf (beadLen beads i).1 (beadLen beads i).2)
+    (pass := fun x y => (y, true) ∈ Jt.getD x [])
+    (T := fun s x => ((sumsOf beads Jt trees s).lookup x).isSome)
+    (d := fun s x => ((sumsOf beads Jt trees s).lookup x).elim 0 AngleSum.value)
+    (fun i => angleOf_nonneg _ _) ?_ ?_ ?_ l hl hn hc
+  · -- the root
+    intro s hsn
+    obtain ⟨root, hlk, hR⟩ := (nodeSums_ok (hs s hsn).1).1
+    refine ⟨by simp [hlk], ?_⟩
+    rw [AngleSum.rep_unique (hd s hsn s root hlk).1 hR]
+  · -- a step to a bead y > s
+    intro s hsn x hT y hpass hsy hyn
+    obtain ⟨st, hst⟩ := Option.isSome_iff_exists.mp hT
+    obtain ⟨hR, hmem⟩ := hd s hsn x st hst
+    have hcn := forallK_ok (hs s hsn).2 (x, st) hmem
+    have hcheck := forallK_ok hcn (y, true) (List.mem_filter.mpr ⟨hpass, rfl⟩)
+    simp only at hcheck
+    rw [if_neg (by omega), if_neg (by omega)] at hcheck
+    split at hcheck
+    · cases hcheck
+    · rename_i sxy hsxy
+      have hR' := AngleSum.add_sound hR (angleAdd_ok hsxy)
+      split_ifs at hcheck with hat
+      · left
+        have := (AngleSum.atLeast_iff hR' 2).mp (by simpa [atLeast] using hat)
+        push_cast at this
+        exact this
+      · right
+        split at hcheck
+        · cases hcheck
+        · rename_i sy hsy
+          refine ⟨by simp [hsy], ?_⟩
+          split at hcheck
+          · rename_i hle
+            exact (AngleSum.leq_sound (hd s hsn y sy hsy).1 hR' (angleLeq_ok hle)).mp rfl
+          · cases hcheck
+          · cases hcheck
+  · -- closing the loop at s
+    intro s hsn x hT hpass
+    obtain ⟨st, hst⟩ := Option.isSome_iff_exists.mp hT
+    obtain ⟨hR, hmem⟩ := hd s hsn x st hst
+    have hcn := forallK_ok (hs s hsn).2 (x, st) hmem
+    have hcheck := forallK_ok hcn (s, true) (List.mem_filter.mpr ⟨hpass, rfl⟩)
+    simp only at hcheck
+    rw [if_pos trivial] at hcheck
+    split_ifs at hcheck with hat
+    have := (AngleSum.atLeast_iff hR 2).mp (by simpa [atLeast] using hat)
+    push_cast at this
+    exact this
 
 /-- A certificate that the metric is locally CAT(0) (`vlink-certificate-true/2`). -/
 structure TrueCert where

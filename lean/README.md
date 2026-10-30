@@ -11,7 +11,8 @@ certificates built on it.
 | L3 combinatorics | `VLink/Tri.lean` | executable (isosig decoding, skeleton, manifold check) |
 | L3 vector predicates | `VLink/Vec.lean` | proved: the exact operations compute the real inner product, determinant and cross product; `parallel` decides parallelism and the inner product's sign (`parallel_ok`); an accepted `crosses` means the geodesic meets the open edge arc at an interior point (`crosses_ok_minor`, `crosses_ok_half`); the angles added for a bead length and for a corner are the angle between the endpoints and between the tangent directions (`length_angle`, `tangent_angle`) |
 | L3 beads | `VLink/Kernel.lean` | proved: an accepted bead crosses every interior edge of its developed strip (`checkBead_ok`); exact angle sums represent the sum of their angles (`angleSum_ok`) |
-| L3 development, junctions, L4 certificates | `VLink/Kernel.lean`, `VLink/Cert.lean` | executable; built on the proved layers |
+| L4 True certificates | `VLink/Necklace.lean`, `VLink/Kernel.lean` | proved: if every tree's values satisfy the checked inequalities, every necklace (a `Cycle` of beads, each passing to the next) has length `≥ 2π` (`no_short_necklace`); the kernel's tree check establishes exactly those inequalities for the exact angle sums, so when it passes no necklace at that vertex is shorter than `2π` (`checkVertexTrees_ok`); an exact angle sum represents a single angle (`AngleSum.rep_unique`) |
+| L3 development, junctions, L4 False certificates | `VLink/Kernel.lean`, `VLink/Cert.lean` | executable; built on the proved layers |
 | bridge to CAT(0) | `docs/proofs.md` | on paper: cited results (Gromov, Bowditch, Elder–McCammond–Meier) and the kernel's geometric lemmas |
 
 No proof uses linear independence of square roots or any normal form: zero
@@ -73,7 +74,9 @@ everywhere.
   (so `parallel_ok` reads as "same / opposite direction", and the symmetric
   hypotheses hold).
 - Junctions: `junctionSide` sums the corner angles around the link vertex
-  (`tangent_angle` for each), so `≥ π` is the local-geodesic condition.
+  (`tangent_angle` for each), so `≥ π` is the local-geodesic condition; then
+  a passing entry of `junctionRow` (`junctionRow_mem`) means the necklace is
+  a local geodesic at that junction.
 - The certificate theorems: `checkFalse c = ok → ¬ LinkCondition` and
   `checkTrue c = ok → LinkCondition`, with the cited results (Gromov,
   Bowditch, Elder–McCammond–Meier, bead enumeration completeness) as named

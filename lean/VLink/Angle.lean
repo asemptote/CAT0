@@ -278,6 +278,32 @@ theorem leq_sound {x y : AngleSum} {Θ₁ Θ₂ : ℝ} (hx : x.Rep Θ₁) (hy : 
     · intro hle
       exact sin_nonneg_of_nonneg_of_le_pi (by linarith) (by nlinarith [pi_pos])
 
+/-- An exact angle sum represents only one angle. -/
+theorem rep_unique {st : AngleSum} {Θ Θ' : ℝ} (h : st.Rep Θ) (h' : st.Rep Θ') : Θ = Θ' := by
+  obtain ⟨-, -, ρ, hρ, hre, him, hlo, hhi⟩ := h
+  obtain ⟨-, -, ρ', hρ', hre', him', hlo', hhi'⟩ := h'
+  have e1 : ρ * sin Θ = ρ' * sin Θ' := him.symm.trans him'
+  have e2 : ρ * cos Θ = ρ' * cos Θ' := hre.symm.trans hre'
+  have e : ρ * ρ' * sin (Θ - Θ') = 0 := by
+    rw [sin_sub]
+    linear_combination (ρ' * cos Θ') * e1 - (ρ' * sin Θ') * e2
+  have hsin : sin (Θ - Θ') = 0 := by
+    rcases mul_eq_zero.mp e with h0 | h0
+    · exact absurd h0 (mul_pos hρ hρ').ne'
+    · exact h0
+  have := (sin_eq_zero_iff_of_lt_of_lt (by linarith) (by linarith)).mp hsin
+  linarith
+
+/-- The angle an exact angle sum represents (`0` if none). -/
+noncomputable def value (st : AngleSum) : ℝ :=
+  open Classical in if h : ∃ Θ, st.Rep Θ then h.choose else 0
+
+theorem value_eq {st : AngleSum} {Θ : ℝ} (h : st.Rep Θ) : st.value = Θ := by
+  have hex : ∃ Θ, st.Rep Θ := ⟨Θ, h⟩
+  unfold value
+  rw [dif_pos hex]
+  exact rep_unique hex.choose_spec h
+
 end AngleSum
 
 end VLink

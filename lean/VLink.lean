@@ -3,5 +3,6 @@ import VLink.Tower
 import VLink.Angle
 import VLink.Vec
 import VLink.Tri
+import VLink.Necklace
 import VLink.Kernel
 import VLink.Cert
