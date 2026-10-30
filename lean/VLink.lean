@@ -2,6 +2,7 @@ import VLink.MQ
 import VLink.Tower
 import VLink.Angle
 import VLink.Vec
+import VLink.Develop
 import VLink.Tri
 import VLink.Necklace
 import VLink.Kernel

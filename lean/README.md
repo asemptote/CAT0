@@ -12,7 +12,8 @@ certificates built on it.
 | L3 vector predicates | `VLink/Vec.lean` | proved: the exact operations compute the real inner product, determinant and cross product; `parallel` decides parallelism and the inner product's sign (`parallel_ok`); an accepted `crosses` means the geodesic meets the open edge arc at an interior point (`crosses_ok_minor`, `crosses_ok_half`); the angles added for a bead length and for a corner are the angle between the endpoints and between the tangent directions (`length_angle`, `tangent_angle`) |
 | L3 beads | `VLink/Kernel.lean` | proved: an accepted bead crosses every interior edge of its developed strip (`checkBead_ok`); exact angle sums represent the sum of their angles (`angleSum_ok`) |
 | L4 True certificates | `VLink/Necklace.lean`, `VLink/Kernel.lean` | proved: if every tree's values satisfy the checked inequalities, every necklace (a `Cycle` of beads, each passing to the next) has length `≥ 2π` (`no_short_necklace`); the kernel's tree check establishes exactly those inequalities for the exact angle sums, so when it passes no necklace at that vertex is shorter than `2π` (`checkVertexTrees_ok`); an exact angle sum represents a single angle (`AngleSum.rep_unique`) |
-| L3 development, junctions, L4 False certificates | `VLink/Kernel.lean`, `VLink/Cert.lean` | executable; built on the proved layers |
+| L3 development | `VLink/Develop.lean`, `VLink/Kernel.lean` | proved: each step places the neighbouring link triangle isometrically, on the far side of the shared edge (`step_iso`, `stepWith_iso`), so in the frame of a strip's first triangle every developed triangle has exactly its own Gram matrix (`develop_iso`) |
+| L3 junctions, L4 False certificates | `VLink/Kernel.lean`, `VLink/Cert.lean` | executable; built on the proved layers |
 | bridge to CAT(0) | `docs/proofs.md` | on paper: cited results (Gromov, Bowditch, Elder–McCammond–Meier) and the kernel's geometric lemmas |
 
 No proof uses linear independence of square roots or any normal form: zero
@@ -68,11 +69,9 @@ everywhere.
 
 ## Next
 
-- Development: `step` places the next link triangle isometrically (the
-  developed vectors have the triangle's Gram matrix), from the transition
-  data; and the Gram matrix of a valid tetrahedron is positive definite
-  (so `parallel_ok` reads as "same / opposite direction", and the symmetric
-  hypotheses hold).
+- The Gram matrix of a valid tetrahedron is positive definite (so
+  `parallel_ok` reads as "same / opposite direction"). Symmetry is checked
+  by the kernel (`symm3`, in `mkTrans`).
 - Junctions: `junctionSide` sums the corner angles around the link vertex
   (`tangent_angle` for each), so `≥ π` is the local-geodesic condition; then
   a passing entry of `junctionRow` (`junctionRow_mem`) means the necklace is

@@ -1,4 +1,4 @@
-import VLink.Vec
+import VLink.Develop
 import VLink.Tri
 import VLink.Necklace
 
@@ -70,6 +70,62 @@ def angleLeq (x y : AngleSum) : KM Bool :=
   match x.leq y with
   | some b => pure b
   | none => throw "angle comparison undecided"
+
+/-! ### Lists in `KM` -/
+
+/-- `f` succeeds on every element of the list. -/
+def forallK {α : Type} : List α → (α → KM Unit) → KM Unit
+  | [], _ => .ok ()
+  | a :: l, f =>
+    match f a with
+    | .ok () => forallK l f
+    | .error e => .error e
+
+lemma forallK_ok {α : Type} {l : List α} {f : α → KM Unit} (h : forallK l f = .ok ()) :
+    ∀ a ∈ l, f a = .ok () := by
+  induction l with
+  | nil => simp
+  | cons a l ih =>
+    unfold forallK at h
+    split at h
+    · rename_i ha
+      intro b hb
+      rcases List.mem_cons.mp hb with rfl | hb
+      · exact ha
+      · exact ih h b hb
+    · cases h
+
+/-- `List.mapM` in `KM`, with a usable specification. -/
+def mapK {α β : Type} (f : α → KM β) : List α → KM (List β)
+  | [] => .ok []
+  | a :: l =>
+    match f a, mapK f l with
+    | .ok b, .ok bs => .ok (b :: bs)
+    | .error e, _ => .error e
+    | _, .error e => .error e
+
+lemma mapK_ok {α β : Type} {f : α → KM β} {l : List α} {l' : List β}
+    (h : mapK f l = .ok l') : List.Forall₂ (fun a b => f a = .ok b) l l' := by
+  induction l generalizing l' with
+  | nil => cases h; exact List.Forall₂.nil
+  | cons a l ih =>
+    unfold mapK at h
+    split at h
+    · rename_i b bs ha hl
+      cases h
+      exact List.Forall₂.cons ha (ih hl)
+    · cases h
+    · cases h
+
+lemma forall2_mem_right {α β : Type} {R : α → β → Prop} {l : List α} {l' : List β}
+    (h : List.Forall₂ R l l') {b : β} (hb : b ∈ l') : ∃ a ∈ l, R a b := by
+  induction h with
+  | nil => simp at hb
+  | cons hab _ ih =>
+    rcases List.mem_cons.mp hb with rfl | hb
+    · exact ⟨_, List.mem_cons_self, hab⟩
+    · obtain ⟨a, ha, hR⟩ := ih hb
+      exact ⟨a, List.mem_cons_of_mem _ ha, hR⟩
 
 /-! ### Metric -/
 
@@ -156,32 +212,73 @@ structure Link where
   glue : Array (Array (Array Nat))
   lv : Array (Array Nat)
   nVertices : Nat
-  trans : Array (Array Trans)
+  trans : List (List Trans)
   deriving Inhabited
 
 def others3 (d : Nat) : Nat × Nat := if d = 0 then (1, 2) else if d = 1 then (0, 2) else (0, 1)
 
+lemma others3_spec {d : Nat} (hd : d < 3) :
+    (others3 d).1 < 3 ∧ (others3 d).2 < 3 ∧ (others3 d).1 ≠ (others3 d).2 ∧
+      (others3 d).1 ≠ d ∧ (others3 d).2 ≠ d := by
+  unfold others3; split_ifs <;> omega
+
+/-- Entry `(i, j)` of a Gram matrix. -/
+def gq (G : Gram) (i j : Nat) : ℚ := (G[i]!)[j]!
+
+/-- `g` permutes `{0, 1, 2}`. -/
+def isPerm3 (g : Array Nat) : Bool :=
+  g[0]! < 3 && g[1]! < 3 && g[2]! < 3 && g[0]! != g[1]! && g[0]! != g[2]! && g[1]! != g[2]!
+
+def symm3 (G : Gram) : Bool := gq G 0 1 == gq G 1 0 && gq G 0 2 == gq G 2 0 && gq G 1 2 == gq G 2 1
+
+lemma isPerm3_spec {g : Array Nat} (h : isPerm3 g = true) {i j : Nat} (hi : i < 3) (hj : j < 3)
+    (hij : i ≠ j) : g[i]! < 3 ∧ g[i]! ≠ g[j]! := by
+  unfold isPerm3 at h
+  simp only [Bool.and_eq_true, decide_eq_true_eq, bne_iff_ne, ne_eq] at h
+  interval_cases i <;> interval_cases j <;> omega
+
+lemma symm3_spec {G : Gram} (h : symm3 G = true) {i j : Nat} (hi : i < 3) (hj : j < 3) :
+    gq G i j = gq G j i := by
+  unfold symm3 at h
+  simp only [Bool.and_eq_true, beq_iff_eq] at h
+  interval_cases i <;> interval_cases j <;> simp_all
+
+lemma bform_symm {G : Gram} (h : symm3 G = true) (u v : Fin 3 → ℝ) :
+    bform G.toMat u v = bform G.toMat v u := by
+  have s := fun i j (hi : i < 3) (hj : j < 3) => symm3_spec h hi hj
+  simp only [bform, Fin.sum_univ_three, Gram.toMat]
+  have e01 := s 0 1 (by norm_num) (by norm_num)
+  have e02 := s 0 2 (by norm_num) (by norm_num)
+  have e12 := s 1 2 (by norm_num) (by norm_num)
+  simp only [gq] at e01 e02 e12
+  simp only [Fin.val_zero, Fin.val_one, Fin.val_two, e01, e02, e12]
+  ring
+
 def mkTrans (G : Array Gram) (adj : Array (Array Nat)) (glue : Array (Array (Array Nat)))
-    (t d : Nat) : KM Trans := do
+    (t d : Nat) : KM Trans :=
   let t2 := (adj[t]!)[d]!
   let g := (glue[t]!)[d]!
-  let (a, b) := others3 d
+  let a := (others3 d).1
+  let b := (others3 d).2
   let Gt := G[t]!
   let G2 := G[t2]!
-  let (a2, b2, d2) := (g[a]!, g[b]!, g[d]!)
-  if (Gt[a]!)[a]! ≠ (G2[a2]!)[a2]! ∨ (Gt[a]!)[b]! ≠ (G2[a2]!)[b2]! ∨ (Gt[b]!)[b]! ≠ (G2[b2]!)[b2]! then
-    throw "glued link edge has different lengths on its two sides"
-  let dt := (Gt[a]!)[a]! * (Gt[b]!)[b]! - (Gt[a]!)[b]! ^ 2
-  let p := (((Gt[d]!)[a]! * (Gt[b]!)[b]! - (Gt[d]!)[b]! * (Gt[a]!)[b]!) / dt,
-            ((Gt[d]!)[b]! * (Gt[a]!)[a]! - (Gt[d]!)[a]! * (Gt[a]!)[b]!) / dt)
-  let q := (((G2[d2]!)[a2]! * (Gt[b]!)[b]! - (G2[d2]!)[b2]! * (Gt[a]!)[b]!) / dt,
-            ((G2[d2]!)[b2]! * (Gt[a]!)[a]! - (G2[d2]!)[a2]! * (Gt[a]!)[b]!) / dt)
-  let h := (Gt[d]!)[d]! - p.1 * (Gt[d]!)[a]! - p.2 * (Gt[d]!)[b]!
-  let h2 := (G2[d2]!)[d2]! - q.1 * (G2[d2]!)[a2]! - q.2 * (G2[d2]!)[b2]!
-  if h ≤ 0 ∨ h2 ≤ 0 then throw "degenerate link triangle"
-  return ⟨t2, g, p, q, MQ.sqrtRat (h2 / h)⟩
+  if !(isPerm3 g && symm3 Gt && symm3 G2) then .error "malformed link data"
+  else if gq Gt a a ≠ gq G2 g[a]! g[a]! ∨ gq Gt a b ≠ gq G2 g[a]! g[b]! ∨
+      gq Gt b b ≠ gq G2 g[b]! g[b]! then
+    .error "glued link edge has different lengths on its two sides"
+  else
+    let dt := gq Gt a a * gq Gt b b - gq Gt a b ^ 2
+    let p0 := (gq Gt d a * gq Gt b b - gq Gt d b * gq Gt a b) / dt
+    let p1 := (gq Gt d b * gq Gt a a - gq Gt d a * gq Gt a b) / dt
+    let q0 := (gq G2 g[d]! g[a]! * gq Gt b b - gq G2 g[d]! g[b]! * gq Gt a b) / dt
+    let q1 := (gq G2 g[d]! g[b]! * gq Gt a a - gq G2 g[d]! g[a]! * gq Gt a b) / dt
+    let h := gq Gt d d - p0 * gq Gt d a - p1 * gq Gt d b
+    let h2 := gq G2 g[d]! g[d]! - q0 * gq G2 g[d]! g[a]! - q1 * gq G2 g[d]! g[b]!
+    if dt = 0 ∨ h ≤ 0 ∨ h2 ≤ 0 then .error "degenerate link triangle"
+    else .ok ⟨t2, g, (p0, p1), (q0, q1), MQ.sqrtRat (h2 / h)⟩
 
-def Link.make (geo : Geometry) (iv : Nat) : KM Link := do
+/-- Link data without the transitions. -/
+def Link.base (geo : Geometry) (iv : Nat) : Link := Id.run do
   let T := geo.T
   let corners := T.corners[iv]!
   let mut index : Std.HashMap (Nat × Nat) Nat := {}
@@ -213,38 +310,268 @@ def Link.make (geo : Geometry) (iv : Nat) : KM Link := do
         l := l.push labels.size
         labels := labels.insert key labels.size
     lv := lv.push l
-  let mut trans := #[]
-  for t in [0:corners.size] do
-    let mut row := #[]
-    for d in [0:3] do row := row.push (← mkTrans G adj glue t d)
-    trans := trans.push row
-  return ⟨corners.size, G, adj, glue, lv, labels.size, trans⟩
+  return ⟨corners.size, G, adj, glue, lv, labels.size, []⟩
 
-/-- Develop across the edge opposite vertex `d` of triangle `t` at positions `P`. -/
-def step (L : Link) (P : Array Vec) (t d : Nat) : Nat × Array Vec :=
-  let tr := (L.trans[t]!)[d]!
-  let (a, b) := others3 d
+def Link.make (geo : Geometry) (iv : Nat) : KM Link :=
+  let B := Link.base geo iv
+  match mapK (fun t => mapK (mkTrans B.G B.adj B.glue t) [0, 1, 2]) (List.range B.n) with
+  | .ok rows => .ok { B with trans := rows }
+  | .error e => .error e
+
+/-- The transition across the edge opposite vertex `d` of triangle `t`. -/
+def Link.tr (L : Link) (t d : Nat) : Trans := (L.trans.getD t []).getD d default
+
+theorem Link.make_trans {geo : Geometry} {iv : Nat} {L : Link} (h : Link.make geo iv = .ok L) :
+    ∀ t < L.n, ∀ d < 3, mkTrans L.G L.adj L.glue t d = .ok (L.tr t d) := by
+  unfold Link.make at h
+  simp only at h
+  split at h
+  · rename_i rows hrows
+    cases h
+    intro t ht d hd
+    dsimp only at ht
+    have hf := mapK_ok hrows
+    have hlen : rows.length = (Link.base geo iv).n := by simpa using hf.length_eq.symm
+    have htr : t < rows.length := by omega
+    have ht' := (List.forall₂_iff_get.mp hf).2 t (by simpa using ht) htr
+    simp only [List.get_eq_getElem, List.getElem_range] at ht'
+    have hf2 := mapK_ok ht'
+    have hlen2 : rows[t].length = 3 := by simpa using hf2.length_eq.symm
+    have hd' := (List.forall₂_iff_get.mp hf2).2 d (by simpa using hd) (by omega)
+    simp only [Link.tr]
+    rw [List.getD_eq_getElem _ _ htr, List.getD_eq_getElem _ _ (by omega)]
+    interval_cases d <;> simpa using hd'
+  · cases h
+
+/-- Positions of a link triangle's vertices, developed into the frame of
+Gram matrix `M`: `stepWith` places the neighbour's vertices. -/
+def stepWith (tr : Trans) (P : Array V3) (d : Nat) : Array V3 :=
+  let a := (others3 d).1
+  let b := (others3 d).2
   let Pa := P[a]!
   let Pb := P[b]!
   let Pd := P[d]!
   let normal := V3.sub (V3.sub Pd (V3.scaleQ tr.p.1 Pa)) (V3.scaleQ tr.p.2 Pb)
   let new := V3.sub (V3.add (V3.scaleQ tr.q.1 Pa) (V3.scaleQ tr.q.2 Pb)) (V3.scale tr.mu normal)
-  let P2 := ((#[default, default, default] : Array V3).set! tr.g[a]! Pa |>.set! tr.g[b]! Pb).set!
-    tr.g[d]! new
-  (tr.t2, P2)
+  let f : Nat → V3 := fun i => if i = tr.g[a]! then Pa else if i = tr.g[b]! then Pb else new
+  #[f 0, f 1, f 2]
 
-def develop (L : Link) (ts steps : Array Nat) : KM (Array (Array Vec)) := do
-  if steps.size + 1 ≠ ts.size then throw "wrong number of strip steps"
-  let mut P := E3
-  let mut out := #[E3]
-  for k in [0:steps.size] do
-    let t := ts[k]!
-    let d := steps[k]!
-    if d > 2 ∨ (L.adj[t]!)[d]! ≠ ts[k + 1]! then
-      throw s!"strip step {k} does not glue triangle {t} to {ts[k + 1]!}"
-    P := (step L P t d).2
-    out := out.push P
-  return out
+/-- Develop across the edge opposite vertex `d` of triangle `t` at positions `P`. -/
+def step (L : Link) (P : Array Vec) (t d : Nat) : Nat × Array Vec :=
+  ((L.tr t d).t2, stepWith (L.tr t d) P d)
+
+def developFrom (L : Link) : Array V3 → List Nat → List Nat → KM (List (Array V3))
+  | _, [_], [] => .ok []
+  | P, t :: t' :: ts, d :: ds =>
+    if d > 2 ∨ (L.adj[t]!)[d]! ≠ t' then .error s!"strip step does not glue triangle {t} to {t'}"
+    else
+      match developFrom L (step L P t d).2 (t' :: ts) ds with
+      | .ok rest => .ok ((step L P t d).2 :: rest)
+      | .error e => .error e
+  | _, _, _ => .error "wrong number of strip steps"
+
+def develop (L : Link) (ts steps : Array Nat) : KM (Array (Array Vec)) :=
+  if steps.size + 1 ≠ ts.size then .error "wrong number of strip steps"
+  else match developFrom L E3 ts.toList steps.toList with
+    | .ok rest => .ok (E3 :: rest).toArray
+    | .error e => .error e
+
+/-- The vertices `P` of a triangle with Gram matrix `Gt`, in the frame `M`. -/
+def GramOK (M : Fin 3 → Fin 3 → ℝ) (P : Array V3) (Gt : Gram) : Prop :=
+  ∀ i j, i < 3 → j < 3 → bform M (P[i]!).val (P[j]!).val = (gq Gt i j : ℝ)
+
+/-- One development step is isometric: the neighbour's developed vertices
+have its Gram matrix, and its new vertex lies on the other side of the
+shared edge's plane. -/
+theorem stepWith_iso {G : Array Gram} {adj : Array (Array Nat)} {glue : Array (Array (Array Nat))}
+    {t d : Nat} {tr : Trans} {M : Fin 3 → Fin 3 → ℝ} (hsym : ∀ u v, bform M u v = bform M v u)
+    (h : mkTrans G adj glue t d = .ok tr) (hd : d < 3) {P : Array V3} (hP : GramOK M P G[t]!) :
+    GramOK M (stepWith tr P d) G[tr.t2]! ∧
+      ∃ μ : ℝ, 0 < μ ∧ rdet (P[(others3 d).1]!).val (P[(others3 d).2]!).val
+        ((stepWith tr P d)[tr.g[d]!]!).val =
+        -μ * rdet (P[(others3 d).1]!).val (P[(others3 d).2]!).val (P[d]!).val := by
+  obtain ⟨ha3, hb3, hab, had, hbd⟩ := others3_spec hd
+  unfold mkTrans at h
+  simp only at h
+  split_ifs at h with h1 h2 h3 <;> try (cases h; done)
+  cases h
+  set a := (others3 d).1 with ha
+  set b := (others3 d).2 with hb
+  set g := (glue[t]!)[d]! with hg
+  set t2 := (adj[t]!)[d]! with ht2
+  set Gt := G[t]! with hGt
+  set G2 := G[t2]! with hG2
+  simp only [Bool.not_eq_true', Bool.and_eq_false_iff, Bool.not_eq_false, not_or] at h1
+  have hperm : isPerm3 g = true := h1.1.1
+  have hsGt : symm3 Gt = true := h1.1.2
+  have hsG2 : symm3 G2 = true := h1.2
+  push Not at h2 h3
+  obtain ⟨eaa, eab, ebb⟩ := h2
+  obtain ⟨hdt, hh, hh2⟩ := h3
+  -- the permutation g
+  obtain ⟨gab3, gab⟩ := isPerm3_spec hperm ha3 hb3 hab
+  obtain ⟨-, gad⟩ := isPerm3_spec hperm ha3 hd had
+  obtain ⟨gb3, gbd⟩ := isPerm3_spec hperm hb3 hd hbd
+  obtain ⟨gd3, -⟩ := isPerm3_spec hperm hd ha3 (Ne.symm had)
+  -- real data
+  set Pa := (P[a]!).val
+  set Pb := (P[b]!).val
+  set Pd := (P[d]!).val
+  set p0 := (gq Gt d a * gq Gt b b - gq Gt d b * gq Gt a b) / (gq Gt a a * gq Gt b b - gq Gt a b ^ 2)
+  set p1 := (gq Gt d b * gq Gt a a - gq Gt d a * gq Gt a b) / (gq Gt a a * gq Gt b b - gq Gt a b ^ 2)
+  set q0 := (gq G2 g[d]! g[a]! * gq Gt b b - gq G2 g[d]! g[b]! * gq Gt a b) /
+    (gq Gt a a * gq Gt b b - gq Gt a b ^ 2)
+  set q1 := (gq G2 g[d]! g[b]! * gq Gt a a - gq G2 g[d]! g[a]! * gq Gt a b) /
+    (gq Gt a a * gq Gt b b - gq Gt a b ^ 2)
+  set hq := gq Gt d d - p0 * gq Gt d a - p1 * gq Gt d b
+  set h2q := gq G2 g[d]! g[d]! - q0 * gq G2 g[d]! g[a]! - q1 * gq G2 g[d]! g[b]!
+  set μ := (MQ.sqrtRat (h2q / hq)).val with hμdef
+  have hμ0 : 0 < μ := by
+    rw [hμdef, MQ.val_sqrtRat _ (le_of_lt (div_pos hh2 hh))]
+    exact Real.sqrt_pos.mpr (by exact_mod_cast div_pos hh2 hh)
+  have hμ2 : μ ^ 2 * (hq : ℝ) = (h2q : ℝ) := by
+    rw [hμdef, MQ.val_sqrtRat _ (le_of_lt (div_pos hh2 hh)),
+      Real.sq_sqrt (by exact_mod_cast (div_pos hh2 hh).le)]
+    have : (hq : ℝ) ≠ 0 := by exact_mod_cast hh.ne'
+    push_cast
+    field_simp
+  obtain ⟨hna, hnb, hnn, hdet⟩ := step_iso M hsym Pa Pb Pd
+    (gq Gt a a) (gq Gt a b) (gq Gt b b) (gq Gt d a) (gq Gt d b) (gq Gt d d)
+    (gq G2 g[d]! g[a]!) (gq G2 g[d]! g[b]!) (gq G2 g[d]! g[d]!) p0 p1 q0 q1 μ
+    (hP a a ha3 ha3) (hP a b ha3 hb3) (hP b b hb3 hb3) (hP d a hd ha3) (hP d b hd hb3)
+    (hP d d hd hd) (by exact_mod_cast hdt) (by simp [p0]) (by simp [p1]) (by simp [q0])
+    (by simp [q1]) (by have e := hμ2; simp only [hq, h2q, Rat.cast_sub, Rat.cast_mul] at e; exact e)
+  -- the developed positions
+  set newR := (q0 : ℝ) • Pa + (q1 : ℝ) • Pb - μ • (Pd - (p0 : ℝ) • Pa - (p1 : ℝ) • Pb)
+  have hE : ∀ i < 3, (stepWith ⟨t2, g, (p0, p1), (q0, q1), MQ.sqrtRat (h2q / hq)⟩ P d)[i]! =
+      (if i = g[a]! then P[a]! else if i = g[b]! then P[b]! else
+        V3.sub (V3.add (V3.scaleQ q0 P[a]!) (V3.scaleQ q1 P[b]!))
+          (V3.scale (MQ.sqrtRat (h2q / hq))
+            (V3.sub (V3.sub P[d]! (V3.scaleQ p0 P[a]!)) (V3.scaleQ p1 P[b]!)))) := by
+    intro i hi
+    interval_cases i <;> rfl
+  have vA : (stepWith ⟨t2, g, (p0, p1), (q0, q1), MQ.sqrtRat (h2q / hq)⟩ P d)[g[a]!]!.val = Pa := by
+    rw [hE _ gab3, if_pos rfl]
+  have vB : (stepWith ⟨t2, g, (p0, p1), (q0, q1), MQ.sqrtRat (h2q / hq)⟩ P d)[g[b]!]!.val = Pb := by
+    rw [hE _ gb3, if_neg (Ne.symm gab), if_pos rfl]
+  have vD : (stepWith ⟨t2, g, (p0, p1), (q0, q1), MQ.sqrtRat (h2q / hq)⟩ P d)[g[d]!]!.val = newR := by
+    rw [hE _ gd3, if_neg (Ne.symm gad), if_neg (Ne.symm gbd)]
+    simp [newR, Pa, Pb, Pd, μ]
+  have sG2 := fun i j (hi : i < 3) (hj : j < 3) => symm3_spec hsG2 hi hj
+  have sGt := fun i j (hi : i < 3) (hj : j < 3) => symm3_spec hsGt hi hj
+  refine ⟨?_, μ, hμ0, ?_⟩
+  · intro i j hi hj
+    have cover : ∀ k < 3, k = g[a]! ∨ k = g[b]! ∨ k = g[d]! := by intro k hk; omega
+    rcases cover i hi with rfl | rfl | rfl <;> rcases cover j hj with rfl | rfl | rfl
+    · rw [vA, hP a a ha3 ha3, eaa]
+    · rw [vA, vB, hP a b ha3 hb3, eab]
+    · rw [vA, vD, hsym, hna, sG2 _ _ gd3 gab3]
+    · rw [vB, vA, hP b a hb3 ha3, sGt _ _ hb3 ha3, eab, sG2 _ _ gab3 gb3]
+    · rw [vB, hP b b hb3 hb3, ebb]
+    · rw [vB, vD, hsym, hnb, sG2 _ _ gd3 gb3]
+    · rw [vD, vA, hna]
+    · rw [vD, vB, hnb]
+    · rw [vD, hnn]
+  · rw [vD]
+    exact hdet
+
+
+
+lemma mkTrans_t2 {G : Array Gram} {adj : Array (Array Nat)} {glue : Array (Array (Array Nat))}
+    {t d : Nat} {tr : Trans} (h : mkTrans G adj glue t d = .ok tr) :
+    tr.t2 = (adj[t]!)[d]! ∧ symm3 G[t]! = true := by
+  unfold mkTrans at h
+  simp only at h
+  split_ifs at h with h1 h2 h3 <;> try (cases h; done)
+  cases h
+  simp only [Bool.not_eq_true', Bool.and_eq_false_iff, Bool.not_eq_false, not_or] at h1
+  exact ⟨rfl, h1.1.2⟩
+
+lemma E3_gram (G0 : Gram) : GramOK G0.toMat E3 G0 := by
+  intro i j hi hj
+  interval_cases i <;> interval_cases j <;>
+    simp [bform, E3, V3.val, Fin.sum_univ_three, Gram.toMat, gq, mqOne]
+
+/-- Developing along a strip keeps every triangle's Gram matrix. -/
+theorem developFrom_iso {L : Link}
+    (hL : ∀ t < L.n, ∀ d < 3, mkTrans L.G L.adj L.glue t d = .ok (L.tr t d))
+    {M : Fin 3 → Fin 3 → ℝ} (hsym : ∀ u v, bform M u v = bform M v u) :
+    ∀ (ds ts : List Nat) (t : Nat) (P : Array V3) (out : List (Array V3)),
+      t < L.n → (∀ x ∈ ts, x < L.n) → GramOK M P L.G[t]! →
+      developFrom L P (t :: ts) ds = .ok out →
+      ∀ k (hk : k < out.length), GramOK M out[k] L.G[ts[k]!]! := by
+  intro ds
+  induction ds with
+  | nil =>
+    intro ts t P out _ _ _ h k hk
+    cases ts with
+    | nil => simp [developFrom] at h; subst h; simp at hk
+    | cons t' ts => simp [developFrom] at h
+  | cons d ds ih =>
+    intro ts t P out ht hts hP h k hk
+    cases ts with
+    | nil => simp [developFrom] at h
+    | cons t' ts =>
+      unfold developFrom at h
+      split_ifs at h with hbad
+      push Not at hbad
+      obtain ⟨hd, hadj⟩ := hbad
+      have hd3 : d < 3 := by omega
+      have hm := hL t ht d hd3
+      obtain ⟨ht2, -⟩ := mkTrans_t2 hm
+      have hstep := (stepWith_iso hsym hm hd3 hP).1
+      rw [ht2, hadj] at hstep
+      split at h
+      · rename_i rest hrest
+        cases h
+        have ht' : t' < L.n := hts t' List.mem_cons_self
+        have hts' : ∀ x ∈ ts, x < L.n := fun x hx => hts x (List.mem_cons_of_mem _ hx)
+        cases k with
+        | zero => simpa [step] using hstep
+        | succ k =>
+          have := ih ts t' (step L P t d).2 rest ht' hts' (by simpa [step] using hstep) hrest k
+            (by simpa using hk)
+          simpa using this
+      · cases h
+
+/-- A developed strip is isometric: in the frame of its first triangle, the
+`k`-th developed triangle's vertex vectors have exactly the Gram matrix of
+the strip's `k`-th link triangle. -/
+theorem develop_iso {geo : Geometry} {iv : Nat} {L : Link} (hL : Link.make geo iv = .ok L)
+    {ts steps : Array Nat} {pos : Array (Array V3)} (h : develop L ts steps = .ok pos)
+    (hts : ∀ t ∈ ts.toList, t < L.n) :
+    ∀ k (hk : k < pos.size), GramOK (L.G[ts[0]!]!).toMat pos[k] L.G[ts[k]!]! := by
+  have hLt := Link.make_trans hL
+  unfold develop at h
+  split_ifs at h with hsz
+  split at h
+  · rename_i rest hrest
+    cases h
+    obtain ⟨t0, tl, htl⟩ : ∃ t0 tl, ts.toList = t0 :: tl := by
+      cases hc : ts.toList with
+      | nil =>
+        have : ts.size = 0 := by simpa using congrArg List.length hc
+        omega
+      | cons t0 tl => exact ⟨t0, tl, rfl⟩
+    have h0 : ts[0]! = t0 := by
+      have h' : ts.toList[0]! = t0 := by rw [htl]; rfl
+      rwa [Array.getElem!_toList] at h'
+    have ht0 : t0 < L.n := hts t0 (by rw [htl]; exact List.mem_cons_self)
+    have hsym := bform_symm (mkTrans_t2 (hLt t0 ht0 0 (by norm_num))).2
+    rw [htl] at hrest
+    intro k hk
+    rw [h0]
+    cases k with
+    | zero => simpa [h0] using E3_gram L.G[t0]!
+    | succ k =>
+      have := developFrom_iso hLt hsym steps.toList tl t0 E3 rest ht0
+        (fun x hx => hts x (by rw [htl]; exact List.mem_cons_of_mem _ hx)) (E3_gram _) hrest k
+        (by simpa using hk)
+      have hk' : ts[k + 1]! = tl[k]! := by
+        have h' : ts.toList[k + 1]! = tl[k]! := by rw [htl]; rfl
+        rwa [Array.getElem!_toList] at h'
+      simpa [hk'] using this
+  · cases h
 
 /-! ### Geodesics and angles -/
 
@@ -563,60 +890,6 @@ def checkFalse (c : FalseCert) : KM String := do
 /-! ### True certificates (docs/true_certificates.md) -/
 
 def LEMMA_4_9 : String := "Elder-McCammond-Meier 2003, Lemma 4.9"
-
-/-- `f` succeeds on every element of the list. -/
-def forallK {α : Type} : List α → (α → KM Unit) → KM Unit
-  | [], _ => .ok ()
-  | a :: l, f =>
-    match f a with
-    | .ok () => forallK l f
-    | .error e => .error e
-
-lemma forallK_ok {α : Type} {l : List α} {f : α → KM Unit} (h : forallK l f = .ok ()) :
-    ∀ a ∈ l, f a = .ok () := by
-  induction l with
-  | nil => simp
-  | cons a l ih =>
-    unfold forallK at h
-    split at h
-    · rename_i ha
-      intro b hb
-      rcases List.mem_cons.mp hb with rfl | hb
-      · exact ha
-      · exact ih h b hb
-    · cases h
-
-/-- `List.mapM` in `KM`, with a usable specification. -/
-def mapK {α β : Type} (f : α → KM β) : List α → KM (List β)
-  | [] => .ok []
-  | a :: l =>
-    match f a, mapK f l with
-    | .ok b, .ok bs => .ok (b :: bs)
-    | .error e, _ => .error e
-    | _, .error e => .error e
-
-lemma mapK_ok {α β : Type} {f : α → KM β} {l : List α} {l' : List β}
-    (h : mapK f l = .ok l') : List.Forall₂ (fun a b => f a = .ok b) l l' := by
-  induction l generalizing l' with
-  | nil => cases h; exact List.Forall₂.nil
-  | cons a l ih =>
-    unfold mapK at h
-    split at h
-    · rename_i b bs ha hl
-      cases h
-      exact List.Forall₂.cons ha (ih hl)
-    · cases h
-    · cases h
-
-lemma forall2_mem_right {α β : Type} {R : α → β → Prop} {l : List α} {l' : List β}
-    (h : List.Forall₂ R l l') {b : β} (hb : b ∈ l') : ∃ a ∈ l, R a b := by
-  induction h with
-  | nil => simp at hb
-  | cons hab _ ih =>
-    rcases List.mem_cons.mp hb with rfl | hb
-    · exact ⟨_, List.mem_cons_self, hab⟩
-    · obtain ⟨a, ha, hR⟩ := ih hb
-      exact ⟨a, List.mem_cons_of_mem _ ha, hR⟩
 
 lemma angleAdd_ok {st st' : AngleSum} {ab : MQ × MQ} (h : angleAdd st ab = .ok st') :
     st.add ab.1 ab.2 = some st' := by
