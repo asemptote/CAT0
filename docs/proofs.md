@@ -19,7 +19,11 @@ those edge lengths, and M the induced piecewise Euclidean (PE) metric.
   piecewise spherical 2-sphere) is CAT(1). Applying II.5.2 again with κ = 1, a
   vertex link is locally CAT(1) iff the link of each of its vertices — a
   circle whose length is the total dihedral angle at the corresponding edge of
-  M — is CAT(1) (for 2-complexes this is BH Lemma II.5.6).
+  M — is CAT(1) (for 2-complexes this is BH Lemma II.5.6). The same
+  equivalences, in the form "locally CAT(κ) ⇔ every vertex link CAT(1) ⇔ no
+  cell link contains a closed geodesic shorter than 2π", are Theorem 2.4 of
+  Elder–McCammond, *CAT(0) is an algorithmic property*, Geom. Dedicata 107
+  (2004).
 - **(C) Circles and short geodesics**. A circle of length ℓ is CAT(1) iff
   ℓ ≥ 2π (BH Example II.3.17 with Berestovskii's Thm II.3.14; for metric
   graphs, Example II.1.15(4)). A locally CAT(1) M_1-complex with finitely many
