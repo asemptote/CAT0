@@ -12,8 +12,10 @@ certificates built on it.
 | L3 vector predicates | `VLink/Vec.lean` | proved: the exact operations compute the real inner product, determinant and cross product; `parallel` decides parallelism and the inner product's sign (`parallel_ok`); an accepted `crosses` means the geodesic meets the open edge arc at an interior point (`crosses_ok_minor`, `crosses_ok_half`); the angles added for a bead length and for a corner are the angle between the endpoints and between the tangent directions (`length_angle`, `tangent_angle`) |
 | L3 beads | `VLink/Kernel.lean` | proved: an accepted bead crosses every interior edge of its developed strip (`checkBead_ok`); exact angle sums represent the sum of their angles (`angleSum_ok`) |
 | L4 True certificates | `VLink/Necklace.lean`, `VLink/Kernel.lean` | proved: if every tree's values satisfy the checked inequalities, every necklace (a `Cycle` of beads, each passing to the next) has length `≥ 2π` (`no_short_necklace`); the kernel's tree check establishes exactly those inequalities for the exact angle sums, so when it passes no necklace at that vertex is shorter than `2π` (`checkVertexTrees_ok`); an exact angle sum represents a single angle (`AngleSum.rep_unique`) |
+| L3 link data | `VLink/Kernel.lean` | proved: every link triangle's Gram matrix is positive definite (`link_gram_posdef`, by Sylvester's criterion from the leading minors the kernel checks); the link's gluing is consistent (`glueOk`, checked) |
 | L3 development | `VLink/Develop.lean`, `VLink/Kernel.lean` | proved: each step places the neighbouring link triangle isometrically, on the far side of the shared edge (`step_iso`, `stepWith_iso`), so in the frame of a strip's first triangle every developed triangle has exactly its own Gram matrix (`develop_iso`) |
-| L3 junctions | `VLink/Kernel.lean` | proved: the exact angle at each side of a junction is the sum of the corner angles listed by the fan walk around the link vertex (`junctionFan_ok`), each the true tangent angle (`tangent_angle`) |
+| L3 junctions | `VLink/Kernel.lean` | proved: the exact angle at each side of a junction is the sum of the corner angles listed by the fan walk (`junctionFan_ok`), each the true tangent angle (`tangent_angle`); the walk turns around the junction's link vertex one glued triangle at a time (`fan_step`), and every angle it adds is a corner at that vertex (`fanWalk_corners`) |
+| L3 beads in order | `VLink/Develop.lean`, `VLink/Kernel.lean` | proved: an accepted bead's segment meets its strip's interior edges at strictly increasing parameters, so it traverses the strip in order (`order_step`, `checkBead_order`); this needs the strip never to turn straight back across the edge it just crossed, which both kernels now check |
 | L4 soundness | `VLink/Soundness.lean` | proved from the cited theorems: an accepted False certificate implies `¬ LocallyCAT0` (`checkFalse_sound`), an accepted True certificate implies `LocallyCAT0` (`checkTrue_sound`) |
 
 `LocallyCAT0 isosig sqlens` is opaque (Mathlib has no piecewise Euclidean
@@ -27,14 +29,14 @@ axioms (`propext`, `Classical.choice`, `Quot.sound`), no `sorry`.
 
 The axioms are justified by the cited theorems (Gromov's link condition,
 Bridson–Haefliger; Bowditch; Elder–McCammond; Elder–McCammond–Meier) together
-with facts proved here — exact arithmetic and angle sums, isometric
-development (`develop_iso`), geodesics crossing their strips' edges
-(`checkBead_ok`, `crosses_ok_*`), lengths and corner angles (`length_angle`,
-`tangent_angle`), junction sums (`junctionFan_ok`), shortest-path trees
-(`checkVertexTrees_ok`) — and three facts argued on paper
-(`docs/proofs.md`): the fan walk visits the corners between the two
-directions in order (§5), a valid tetrahedron's Gram matrix is positive
-definite (§2), and bead enumeration is complete (§3).
+with facts proved here — exact arithmetic and angle sums, positive definite
+Gram matrices (`link_gram_posdef`), isometric development (`develop_iso`),
+geodesics crossing their strips' edges in order (`checkBead_ok`,
+`checkBead_order`), lengths and corner angles (`length_angle`,
+`tangent_angle`), junction sums over the fan around the link vertex
+(`junctionFan_ok`, `fanWalk_corners`), shortest-path trees
+(`checkVertexTrees_ok`) — and one fact still argued on paper
+(`docs/proofs.md` §3): bead enumeration is complete.
 
 No proof uses linear independence of square roots or any normal form: zero
 tests go through the sign, and the sign algorithm is sound for any
@@ -89,8 +91,6 @@ everywhere.
 
 ## Next
 
-- Prove the three paper facts above in Lean, shrinking the axioms to the
-  cited theorems alone: positive definiteness (Sylvester's criterion for
-  3×3, from the tetrahedron's Gram determinants), the fan walk's order around
-  the link vertex, and bead-enumeration completeness (the visible-interval
-  lemma).
+- Prove bead-enumeration completeness in Lean (the visible-interval lemma and
+  the search's interval invariant), and restate `cat0_of_no_short_necklace`
+  over all accepted beads, so that the axioms are the cited theorems alone.

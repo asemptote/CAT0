@@ -85,4 +85,119 @@ theorem step_iso (M : Fin 3 → Fin 3 → ℝ) (hsym : ∀ u v, bform M u v = bf
     simp only [rdet_eq, Pi.add_apply, Pi.smul_apply, smul_eq_mul]
     ring
 
+
+/-! ### Crossings happen in strip order -/
+
+lemma rdet_lin_right (A B X Y : Fin 3 → ℝ) (a b : ℝ) :
+    rdet A B (a • X + b • Y) = a * rdet A B X + b * rdet A B Y := by
+  simp only [rdet_eq, Pi.add_apply, Pi.smul_apply, smul_eq_mul]; ring
+
+lemma rdet_self_left (A B : Fin 3 → ℝ) : rdet A B A = 0 := by simp only [rdet_eq]; ring
+lemma rdet_self_right (A B : Fin 3 → ℝ) : rdet A B B = 0 := by simp only [rdet_eq]; ring
+lemma rdet_swap12 (A B C : Fin 3 → ℝ) : rdet B A C = -rdet A B C := by simp only [rdet_eq]; ring
+lemma rdet_cycle (A B C : Fin 3 → ℝ) : rdet A B C = rdet B C A := by simp only [rdet_eq]; ring
+
+lemma rdet_ray (A B S E : Fin 3 → ℝ) (τ : ℝ) :
+    rdet A B (S + τ • E) = rdet A B S + τ * rdet A B E := by
+  simp only [rdet_eq, Pi.add_apply, Pi.smul_apply, smul_eq_mul]; ring
+
+/-- One step of the ordering argument. Triangle `k` has the edge `A B` and
+third vertex `D`; the next triangle has its new vertex `N` on the other side
+of `A B` (`det(A,B,N) = -μ det(A,B,D)`) and the next edge is `N A` (so its
+third vertex is `B`). If `S` lies on `D`'s side of `A B`, and the segment from
+`S` toward `E` meets the open edge `A B` at parameter `τ` and the open edge
+`N A` at `τ'`, then `τ < τ'` and `S` lies on `B`'s side of `N A`. -/
+theorem order_step {A B D N S E : Fin 3 → ℝ} {μ τ τ' a1 b1 a2 b2 : ℝ}
+    (hμ : 0 < μ) (hN : rdet A B N = -μ * rdet A B D)
+    (hS : 0 < rdet A B S * rdet A B D)
+    (hτ : 0 < τ) (ha1 : 0 < a1) (hb1 : 0 < b1) (h1 : S + τ • E = a1 • A + b1 • B)
+    (ha2 : 0 < a2) (hb2 : 0 < b2) (h2 : S + τ' • E = a2 • N + b2 • A) :
+    τ < τ' ∧ 0 < rdet N A S * rdet N A B := by
+  set s := rdet A B S
+  set dD := rdet A B D
+  set e := rdet A B E
+  have f1 : s + τ * e = 0 := by
+    have := congrArg (rdet A B) h1
+    rw [rdet_ray, rdet_lin_right, rdet_self_left, rdet_self_right] at this
+    linarith
+  have f2 : s + τ' * e = a2 * (-μ * dD) := by
+    have := congrArg (rdet A B) h2
+    rw [rdet_ray, rdet_lin_right, hN, rdet_self_left] at this
+    linarith
+  have hD0 : dD ≠ 0 := by intro h0; rw [h0, mul_zero] at hS; exact lt_irrefl _ hS
+  have he : (τ' - τ) * e = -(a2 * μ * dD) := by linear_combination f2 - f1
+  have hs : s = -τ * e := by linarith
+  have key : (τ' - τ) * (s * dD) = τ * a2 * μ * dD ^ 2 := by
+    rw [hs]; linear_combination (-τ * dD) * he
+  have hpos : 0 < (τ' - τ) * (s * dD) := by
+    rw [key]; have : 0 < dD ^ 2 := by positivity
+    positivity
+  have hlt : τ < τ' := by
+    by_contra hle; push Not at hle; nlinarith
+  refine ⟨hlt, ?_⟩
+  set g1 := rdet N A S
+  set gE := rdet N A E
+  set gB := rdet N A B
+  have g2 : g1 + τ' * gE = 0 := by
+    have := congrArg (rdet N A) h2
+    rw [rdet_ray, rdet_lin_right, rdet_self_left, rdet_self_right] at this
+    linarith
+  have gτ : g1 + τ * gE = b1 * gB := by
+    have := congrArg (rdet N A) h1
+    rw [rdet_ray, rdet_lin_right, rdet_self_right] at this
+    linarith
+  have hgB : gB ≠ 0 := by
+    have : gB = rdet A B N := rdet_cycle N A B
+    rw [this, hN]; exact mul_ne_zero (neg_ne_zero.mpr hμ.ne') hD0
+  have hgE : gE ≠ 0 := by
+    intro h0
+    rw [h0, mul_zero, add_zero] at g2 gτ
+    rw [g2] at gτ
+    exact hgB ((mul_eq_zero.mp gτ.symm).resolve_left hb1.ne')
+  have hτ' : 0 < τ' := lt_trans hτ hlt
+  have hprod : g1 * (b1 * gB) = τ' * (τ' - τ) * gE ^ 2 := by
+    have hg1 : g1 = -τ' * gE := by linarith
+    rw [← gτ, hg1]; ring
+  have : 0 < g1 * (b1 * gB) := by
+    rw [hprod]; have : 0 < gE ^ 2 := by positivity
+    have : 0 < τ' - τ := by linarith
+    positivity
+  have : 0 < b1 * (g1 * gB) := by nlinarith
+  exact pos_of_mul_pos_right this hb1.le
+
+/-- The same with the next edge `N B` (third vertex `A`). -/
+theorem order_step' {A B D N S E : Fin 3 → ℝ} {μ τ τ' a1 b1 a2 b2 : ℝ}
+    (hμ : 0 < μ) (hN : rdet A B N = -μ * rdet A B D)
+    (hS : 0 < rdet A B S * rdet A B D)
+    (hτ : 0 < τ) (ha1 : 0 < a1) (hb1 : 0 < b1) (h1 : S + τ • E = a1 • A + b1 • B)
+    (ha2 : 0 < a2) (hb2 : 0 < b2) (h2 : S + τ' • E = a2 • N + b2 • B) :
+    τ < τ' ∧ 0 < rdet N B S * rdet N B A := by
+  refine order_step (A := B) (B := A) (D := D) hμ ?_ ?_ hτ hb1 ha1 ?_ ha2 hb2 h2
+  · rw [rdet_swap12, hN, rdet_swap12]; ring
+  · rw [rdet_swap12, rdet_swap12 A B D]; nlinarith
+  · rw [h1, add_comm]
+
+
+/-- `order_step` for any position of the next edge: it joins the new vertex
+`N` to one end of `A B` (in either order), and its third vertex `Z` is the
+other end. -/
+theorem order_next {A B D N S E X Y Z : Fin 3 → ℝ} {μ τ τ' a1 b1 a2 b2 : ℝ}
+    (hμ : 0 < μ) (hN : rdet A B N = -μ * rdet A B D)
+    (hS : 0 < rdet A B S * rdet A B D)
+    (hτ : 0 < τ) (ha1 : 0 < a1) (hb1 : 0 < b1) (h1 : S + τ • E = a1 • A + b1 • B)
+    (hcase : (X = A ∧ Y = N ∧ Z = B) ∨ (X = N ∧ Y = A ∧ Z = B) ∨
+      (X = B ∧ Y = N ∧ Z = A) ∨ (X = N ∧ Y = B ∧ Z = A))
+    (ha2 : 0 < a2) (hb2 : 0 < b2) (h2 : S + τ' • E = a2 • X + b2 • Y) :
+    τ < τ' ∧ 0 < rdet X Y S * rdet X Y Z := by
+  rcases hcase with ⟨hX, hY, hZ⟩ | ⟨hX, hY, hZ⟩ | ⟨hX, hY, hZ⟩ | ⟨hX, hY, hZ⟩ <;>
+    rw [hX, hY] at h2 <;> rw [hX, hY, hZ]
+  · obtain ⟨hlt, hpos⟩ := order_step hμ hN hS hτ ha1 hb1 h1 hb2 ha2 (h2.trans (add_comm _ _))
+    refine ⟨hlt, ?_⟩
+    rw [rdet_swap12 N A S, rdet_swap12 N A B, neg_mul_neg]; exact hpos
+  · exact order_step hμ hN hS hτ ha1 hb1 h1 ha2 hb2 h2
+  · obtain ⟨hlt, hpos⟩ := order_step' hμ hN hS hτ ha1 hb1 h1 hb2 ha2 (h2.trans (add_comm _ _))
+    refine ⟨hlt, ?_⟩
+    rw [rdet_swap12 N B S, rdet_swap12 N B A, neg_mul_neg]; exact hpos
+  · exact order_step' hμ hN hS hτ ha1 hb1 h1 ha2 hb2 h2
+
 end VLink

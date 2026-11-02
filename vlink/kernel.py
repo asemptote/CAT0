@@ -435,6 +435,11 @@ def check_bead(link, spec):
         raise Reject('malformed bead')
     steps = list(spec.get('steps') or [])
     pos = develop(link, ts, steps)
+    for k in range(1, len(steps)):
+        # never straight back across the edge just crossed (so the crossings
+        # are met in strip order, docs/proofs.md section 4)
+        if steps[k] == link.glue[ts[k - 1]][steps[k - 1]][steps[k - 1]]:
+            raise Reject('bead strip turns back at step %d' % k)
     G = link.G[ts[0]]
     S, E = pos[0][s], pos[-1][e]
     if parallel(G, S, E) > 0:

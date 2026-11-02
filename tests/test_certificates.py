@@ -90,6 +90,16 @@ def test_wrong_certificates_rejected():
     c = copy.deepcopy(good); c['necklace'] = c['necklace'] + c['necklace'][:1]; bad.append(c)
     c = copy.deepcopy(good); c['isosig'], c['sqlens'] = FLAT[0], FLAT[1]; bad.append(c)
     c = copy.deepcopy(good); c['vertex'] = 99; bad.append(c)
+    # a strip that turns straight back across the edge it just crossed
+    from vlink import kernel as K
+    link = K.Link(K.Geometry(good['isosig'], good['sqlens']), good['vertex'])
+    b0 = good['necklace'][0]
+    t, d = b0['ts'][0], b0['start']
+    t2, g = link.adj[t][d], link.glue[t][d]
+    c = copy.deepcopy(good)
+    c['necklace'][0] = dict(ts=[t, t2, t], start=d, end=d, steps=[d, g[d]], pi_point=None)
+    assert 'turns back' in check_certificate(c)[1], check_certificate(c)
+    bad.append(c)
     bad.append(dict(format=CERT_FORMAT, isosig=FLAT[0], sqlens=FLAT[1], reason='edge', edge=0))
     bad.append(dict(format=CERT_FORMAT, isosig=FLAT[0], sqlens=FLAT[1], reason='invalid', tet=0))
     bad.append(dict(format='other', isosig=FLAT[0], sqlens=FLAT[1], reason='edge', edge=0))

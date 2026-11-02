@@ -346,7 +346,7 @@ meets the open arc `AB` at an interior point of both. -/
 theorem crosses_ok_minor {G : Gram} {S Q A B : V3}
     (h : crosses G S Q A B false = .ok true) :
     ∃ α β γ δ : ℝ, 0 < α ∧ 0 < β ∧ 0 < γ ∧ 0 < δ ∧
-      α • A.val + β • B.val = γ • S.val + δ • Q.val := by
+      α • A.val + β • B.val = γ • S.val + δ • Q.val ∧ rdet A.val B.val S.val ≠ 0 := by
   unfold crosses at h
   simp only [Bool.false_eq_true, ↓reduceIte] at h
   cases hzS : isZero (det3 A B S) with
@@ -407,7 +407,10 @@ theorem crosses_ok_minor {G : Gram} {S Q A B : V3}
   obtain ⟨hga, hde⟩ := coneSigns_ok hcs2
   obtain ⟨γ, δ, hγ, hδ, hY2⟩ := cone_of_signs hYSQ
     (rsign_prod_pos (hga ▸ hpos.1)) (rsign_prod_pos (hde ▸ hpos.2))
-  exact ⟨α, β, γ, δ, hα, hβ, hγ, hδ, hY.symm.trans hY2⟩
+  have hdS : rdet A.val B.val S.val ≠ 0 := by
+    rw [← val_det3]; intro h0
+    exact absurd ((isZero_ok hzS).mpr h0) (by simp)
+  exact ⟨α, β, γ, δ, hα, hβ, hγ, hδ, hY.symm.trans hY2, hdS⟩
 
 /-! ### Angles -/
 

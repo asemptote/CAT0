@@ -175,7 +175,13 @@ planes (S,E) and (A,B) is X = S·D(A,B,E) − E·D(A,B,S) (up to a scalar);
 X lies on the open arc AB iff its coefficients in A, B have equal non-zero
 sign, and on the open arc SE iff its coefficients in S, E do. Crossing every
 shared edge in its interior, in a strip of convex triangles, puts γ inside the
-strip, so γ is a bead. For a π-bead the half great circle through the given
+strip, so γ is a bead. The kernel also requires that the strip never goes straight
+back across the edge it just crossed. Then the crossings come in strip
+order: by induction, S lies on triangle k's side of edge k, the segment
+meets edge k once (at parameter τ_k), the next edge's interior lies strictly
+on the far side (the next triangle is developed across edge k), so
+τ_{k+1} > τ_k, and S lies on triangle k+1's side of edge k+1 (Lean:
+`checkBead_order`). For a π-bead the half great circle through the given
 point Q is tested instead (Q on S's side: Y·(Q − (Q·S/S·S)S) > 0).
 
 ## 5. Junction angles (kernel.junction_side)
@@ -227,9 +233,9 @@ only make the certificate harder to satisfy, never unsound.
   certificate checks is proved from them (`checkFalse_sound`,
   `checkTrue_sound`), together with most of this note — §1 (arithmetic, angle
   sums), §2 (development), §4 (bead checks), §5 (junction sums), §6 (trees) —
-  as Lean theorems. Still argued only here: positive definiteness of a valid
-  tetrahedron's Gram matrix (§2), the order of the fan walk (§5) and bead
-  enumeration completeness (§3).
+  as Lean theorems. Still argued only here: bead
+  enumeration completeness (§3); positive definiteness (§2), the fan walk
+  (§5) and the crossing order (§4) are now Lean theorems too.
 - That `tri.py` decodes isosigs as Regina does (tested, §2: the statement
   "isosig X with squared lengths L" refers to Regina's triangulation and edge
   numbering). Regina itself is no longer used by the kernel.
