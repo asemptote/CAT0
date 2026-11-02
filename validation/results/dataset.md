@@ -4,7 +4,7 @@ Every metric examined: 109 distinct (isosig, squared edge lengths), from the 202
 candidate files, the full census scan (`census_full.md`), Pachner walks and the
 controls. Every answer is certified in both settings (`pi_beads` True and False):
 the certificate is accepted by the Python kernel and by `vlinkcheck` (Lean);
-certificates are stored on `/import/taiji1/wardak/certificates/allm2`.
+certificates are stored on `/import/taiji1/wardak/cat0-vertex-link/certificates/allm2`.
 
 | answer | reason | flat | metrics |
 |---|---|---|---|

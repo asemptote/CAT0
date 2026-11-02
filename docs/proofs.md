@@ -11,15 +11,24 @@ those edge lengths, and M the induced piecewise Euclidean (PE) metric.
 
 ## 0. Cited results
 
-- **(G) Gromov's link condition** [Bridson–Haefliger, Ch. II.5]. A PE
-  complex with finitely many shapes is locally CAT(0) iff the link of every
-  cell is CAT(1). For a 3-manifold the links to check are: edge links
-  (circles) and vertex links (piecewise spherical 2-spheres); the links of
-  faces and of interior points are automatically fine.
-- **(C) Circles and short geodesics** [Bridson–Haefliger, Ch. II.1 and II.5]. A circle of length
-  ℓ is CAT(1) iff ℓ ≥ 2π. A compact piecewise spherical 2-complex that is
-  locally CAT(1) is CAT(1) iff it contains no closed geodesic of length < 2π.
-  A CAT(1) space contains no closed local geodesic of length < 2π.
+- **(G) Gromov's link condition** [Bridson–Haefliger (BH) Thm II.5.2, Def.
+  II.5.1]. An M_κ-polyhedral complex with finitely many shapes has curvature
+  ≤ κ iff the link of every vertex is CAT(1). The link of a vertex is an
+  M_1-complex whose cells are links of vertices of the shapes (BH I.7.15,
+  I.7.38). For a 3-manifold: M is locally CAT(0) iff every vertex link (a
+  piecewise spherical 2-sphere) is CAT(1). Applying II.5.2 again with κ = 1, a
+  vertex link is locally CAT(1) iff the link of each of its vertices — a
+  circle whose length is the total dihedral angle at the corresponding edge of
+  M — is CAT(1) (for 2-complexes this is BH Lemma II.5.6).
+- **(C) Circles and short geodesics**. A circle of length ℓ is CAT(1) iff
+  ℓ ≥ 2π (BH Example II.3.17 with Berestovskii's Thm II.3.14; for metric
+  graphs, Example II.1.15(4)). A locally CAT(1) M_1-complex with finitely many
+  shapes is CAT(1) iff it contains no isometrically embedded circle of length
+  < 2π (BH Thm II.5.4, (5) ⇔ (7); Prop. II.4.17), in particular if it has no
+  closed geodesic of length < 2π. A CAT(1) space contains no closed local
+  geodesic of length < 2π: its two halves would be distinct local geodesics
+  of length < π between the same points, both geodesics by BH Prop.
+  II.1.4(2), contradicting uniqueness (II.1.4(1)).
 - **(B) Bowditch** [Bowditch; Elder–McCammond–Meier (EMM) Lemma 4.5]. In a
   locally CAT(1) space that is not CAT(1), the shortest closed geodesic has
   the same length as the shortest *unshrinkable* closed geodesic.
@@ -33,7 +42,11 @@ those edge lengths, and M the induced piecewise Euclidean (PE) metric.
   3-manifold. A geodesic with a bead longer than π is shrinkable; one with a
   bead of length exactly π is equivalent to one whose beads are all shorter
   than π (4.9).
-- **(L) Local geodesics at a cone point** [Bridson–Haefliger, Ch. I.5 and II.5]. A path through a
+- **(L) Local geodesics at a cone point** [BH Remark I.5.7 with Thm I.7.39,
+  combined as in the proof of BH Prop. II.5.10]. A small ball about a point W
+  of an M_1-complex is isometric to a ball about the cone point of the cone on
+  Lk(W) (I.7.39), and a path through the cone point is a geodesic iff its two
+  directions are at distance ≥ π in the link (I.5.7). So a path through a
   point W of a piecewise spherical surface, geodesic on either side of W, is a
   local geodesic at W iff both angles it makes at W (measured around the
   circle link of W) are ≥ π.
@@ -164,7 +177,8 @@ Termination: a branch is cut when I_k = ∅ or a vertex is parallel to S; a
 strip longer than 4× the number of link triangles raises an error rather than
 being silently dropped (never observed). Evidence beyond the proof:
 `tests/brute_beads.py` (exhaustive strips up to 7 triangles agree exactly) and
-Elder–McCammond's `cat.g` bead catalogue for the disphenoid and cube shapes.
+Elder–McCammond's `cat.g` bead catalogue for the disphenoid and cube shapes
+(`validation/reference/gap/`).
 
 ## 4. Checking a bead (kernel.check_bead)
 
@@ -241,4 +255,3 @@ only make the certificate harder to satisfy, never unsound.
   numbering). Regina itself is no longer used by the kernel.
 - Python itself and the ~1,350 lines of `kernel.py`, `field.py` and `tri.py`.
 
-_Theorem numbers in Bridson–Haefliger to be checked against the book before citing._

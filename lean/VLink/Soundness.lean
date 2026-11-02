@@ -11,9 +11,9 @@ opaque, and the theorems from the literature that characterise it
 the kernel computes:
 
 * `not_cat0_of_degenerate`, `not_cat0_of_short_edge`: Gromov's link condition
-  (Bridson–Haefliger II.5) and circles (BH II.1): an edge's link is a circle of
+  (Bridson–Haefliger Thm II.5.2) and circles (BH Example II.3.17): an edge's link is a circle of
   length its dihedral sum;
-* `not_cat0_of_necklace`: (G), (C) and local geodesics at cone points (BH I.5):
+* `not_cat0_of_necklace`: (G), (C) and local geodesics at cone points (BH I.5.7, I.7.39):
   a short necklace is a closed local geodesic of length `< 2π` in a vertex link;
 * `cat0_of_no_short_necklace`: (G), (C), Bowditch's shrinking (EMM Lemma 4.5),
   the gallery reduction (Elder–McCammond 2002; EMM Lemmas 4.7–4.8), and the

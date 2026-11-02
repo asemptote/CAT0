@@ -12,7 +12,7 @@ each metric through `linkcond(certify=True)` with both kernels
 
 Files: `census_full_metrics.jsonl` (the metrics), `census_full_linkcond.jsonl`
 (answers, Python and Lean verdicts; certificates stored on
-`/import/taiji1/wardak/certificates/census`).
+`/import/taiji1/wardak/cat0-vertex-link/certificates/census`).
 
 | | metrics | locally CAT(0) | of which flat | not CAT(0) |
 |---|---|---|---|---|

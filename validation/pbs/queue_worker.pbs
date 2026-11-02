@@ -4,7 +4,7 @@
 # Submit from headnode; the same queue can be worked at the same time from
 # orr / cartman / stan (backfill):
 #
-#   qsub -v QUEUE=/import/taiji1/wardak/queues/NAME validation/pbs/queue_worker.pbs
+#   qsub -v QUEUE=/import/taiji1/wardak/cat0-vertex-link/work/queues/NAME validation/pbs/queue_worker.pbs
 #   python validation/workqueue.py work $QUEUE --workers 18 --nice   # on cartman, say
 #   python validation/workqueue.py status $QUEUE
 #
@@ -18,7 +18,7 @@
 #PBS -l walltime=12:00:00
 #PBS -J 0-47
 #PBS -j oe
-#PBS -o /import/taiji1/wardak/queues/pbs-logs/
+#PBS -o /import/taiji1/wardak/cat0-vertex-link/work/queues/pbs-logs/
 
 set -euo pipefail
 cd /import/taiji1/wardak/cat0-vertex-link/CAT0

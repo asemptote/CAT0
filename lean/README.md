@@ -48,8 +48,8 @@ representation. Every check in `vlinkcheck` is exact (Python's
 The toolchain and Mathlib cache live on `/import/taiji1` (not in `~`):
 
 ```
-export ELAN_HOME=/import/taiji1/wardak/elan PATH=/import/taiji1/wardak/elan/bin:$PATH
-export MATHLIB_CACHE_DIR=/import/taiji1/wardak/mathlib-cache
+export ELAN_HOME=/import/taiji1/wardak/cat0-vertex-link/tools/elan PATH=/import/taiji1/wardak/cat0-vertex-link/tools/elan/bin:$PATH
+export MATHLIB_CACHE_DIR=/import/taiji1/wardak/cat0-vertex-link/tools/mathlib-cache
 cd /import/taiji1/wardak/cat0-vertex-link/CAT0/lean
 lake exe cache get    # prebuilt Mathlib
 lake build            # proofs + vlinkcheck
