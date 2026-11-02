@@ -1,0 +1,5 @@
+new: 484 beads in 0.30 s (220 thick)
+old: 484 beads in 66.97 s (220 thick)
+only in old: 0, only in new: 0, length mismatches: 0
+speedup x223
+IDENTICAL

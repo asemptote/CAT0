@@ -1,0 +1,5 @@
+new: 264 beads in 0.16 s (120 thick)
+old: 264 beads in 97.60 s (120 thick)
+only in old: 0, only in new: 0, length mismatches: 0
+speedup x629
+IDENTICAL

@@ -1,0 +1,38 @@
+{"isosig": "gLLPQaceedffnkxknnn", "sqlens": [1, 2, 3, 1, 1, 2, 2], "census": "closed", "shape": "cube", "name": "SFS [S2: (3,1) (3,1) (3,-2)] : #1"}
+{"isosig": "gvLQQcedffeffsfhqjh", "sqlens": [1, 2, 1, 2, 3, 2, 1], "census": "closed", "shape": "cube", "name": "SFS [RP2/n2: (2,1) (2,-1)] : #2"}
+{"isosig": "gvLQQcedffeffsfhqjh", "sqlens": [1, 2, 3, 2, 1, 2, 1], "census": "closed", "shape": "cube", "name": "SFS [RP2/n2: (2,1) (2,-1)] : #2"}
+{"isosig": "gvLQQedfedffrwawrhh", "sqlens": [2, 1, 1, 1, 3, 2, 2], "census": "closed", "shape": "cube", "name": "T x S1 : #1"}
+{"isosig": "gvLQQedfedffrwawrhh", "sqlens": [2, 1, 1, 3, 1, 2, 2], "census": "closed", "shape": "cube", "name": "T x S1 : #1"}
+{"isosig": "gvLQQedfedffrwawrhh", "sqlens": [2, 1, 3, 1, 1, 2, 2], "census": "closed", "shape": "cube", "name": "T x S1 : #1"}
+{"isosig": "gvLQQedfedffrwawrhh", "sqlens": [2, 3, 1, 1, 1, 2, 2], "census": "closed", "shape": "cube", "name": "T x S1 : #1"}
+{"isosig": "gvLQQcdefeffncnhchx", "sqlens": [1, 1, 2, 2, 1, 3, 2], "census": "closed", "shape": "cube", "name": "KB/n2 x~ S1 : #3"}
+{"isosig": "gvLQQcdefeffncnhchx", "sqlens": [1, 1, 2, 2, 3, 1, 2], "census": "closed", "shape": "cube", "name": "KB/n2 x~ S1 : #3"}
+{"isosig": "gvLQQcdefeffncnhchx", "sqlens": [1, 3, 2, 2, 1, 1, 2], "census": "closed", "shape": "cube", "name": "KB/n2 x~ S1 : #3"}
+{"isosig": "gvLQQcdefeffncnhchx", "sqlens": [3, 1, 2, 2, 1, 1, 2], "census": "closed", "shape": "cube", "name": "KB/n2 x~ S1 : #3"}
+{"isosig": "iLLPPPcaceefgghhnkxvcaqvn", "sqlens": [1, 2, 3, 1, 1, 2, 2, 1, 2], "census": "closed", "shape": "cube", "name": "SFS [RP2/n2: (3,1) (3,-1)] : #5"}
+{"isosig": "kLLPwzQkaceedgiihjjnkxknxkknan", "sqlens": [1, 2, 3, 1, 1, 2, 2, 1, 1, 2, 2], "census": "closed", "shape": "cube", "name": "SFS [S2: (3,1) (3,1) (3,2) (3,-4)] : #6"}
+{"isosig": "gLLPQbefefefhhxxqxh", "sqlens": [3, 4, 3, 4, 3, 3, 4], "census": "closed", "shape": "disphenoid", "name": "SFS [S2: (2,1) (4,1) (4,-3)] : #2"}
+{"isosig": "gLLPQaceedffnkxknnn", "sqlens": [3, 4, 3, 3, 3, 4, 4], "census": "closed", "shape": "disphenoid", "name": "SFS [S2: (3,1) (3,1) (3,-2)] : #1"}
+{"isosig": "gvLQQdefdeffrrawwhh", "sqlens": [4, 3, 3, 3, 4, 4, 3], "census": "closed", "shape": "disphenoid", "name": "SFS [RP2/n2: (2,1) (2,-1)] : #1"}
+{"isosig": "gvLQQcedffeffsfhqjh", "sqlens": [3, 4, 3, 4, 3, 4, 3], "census": "closed", "shape": "disphenoid", "name": "SFS [RP2/n2: (2,1) (2,-1)] : #2"}
+{"isosig": "gvLQQedfedffrwawrhh", "sqlens": [4, 3, 3, 3, 3, 4, 4], "census": "closed", "shape": "disphenoid", "name": "T x S1 : #1"}
+{"isosig": "gvLQQdefdeffrwawrhh", "sqlens": [4, 3, 3, 4, 4, 3, 3], "census": "closed", "shape": "disphenoid", "name": "KB/n2 x~ S1 : #1"}
+{"isosig": "gvLQQcdefeffncnhchx", "sqlens": [3, 3, 4, 4, 3, 3, 4], "census": "closed", "shape": "disphenoid", "name": "KB/n2 x~ S1 : #3"}
+{"isosig": "iLLPPPcaceefgghhnkxvcaqvn", "sqlens": [3, 4, 3, 3, 3, 4, 4, 3, 4], "census": "closed", "shape": "disphenoid", "name": "SFS [RP2/n2: (3,1) (3,-1)] : #5"}
+{"isosig": "jLLvAQQcdfeighhiiqcaqqncnxh", "sqlens": [3, 3, 4, 4, 3, 3, 4, 3, 3, 4], "census": "closed", "shape": "disphenoid", "name": "Hyp_1.01494161 : #4"}
+{"isosig": "kLLPwzQkaceedgiihjjnkxknxkknan", "sqlens": [3, 4, 3, 3, 3, 4, 4, 3, 3, 4, 4], "census": "closed", "shape": "disphenoid", "name": "SFS [S2: (3,1) (3,1) (3,2) (3,-4)] : #6"}
+{"isosig": "kLLPwPPkaceedghijijnkxknxnkakk", "sqlens": [3, 4, 3, 3, 3, 4, 4, 3, 3, 4, 4], "census": "closed", "shape": "disphenoid", "name": "SFS [D: (3,1) (3,1)] U/m SFS [D: (3,1) (3,1)], m = [ -1,1 | 0,1 ] : #1"}
+{"isosig": "kLLzLPQkacehgijhjijnkxaqqxkckv", "sqlens": [3, 4, 3, 3, 3, 4, 4, 3, 4, 3, 4], "census": "closed", "shape": "disphenoid", "name": "SFS [A: (3,2)] / [ 0,1 | 1,0 ] : #9"}
+{"isosig": "kLLzLPQkacehgijhjijnkxaxaxknkn", "sqlens": [3, 4, 3, 3, 3, 4, 4, 3, 4, 3, 4], "census": "closed", "shape": "disphenoid", "name": "SFS [A: (3,2)] / [ 0,-1 | -1,0 ] : #6"}
+{"isosig": "lLLPALzQcaceedfhikjjknkxknnnxkkkk", "sqlens": [3, 4, 3, 3, 3, 4, 4, 3, 3, 4, 3, 4], "census": "closed", "shape": "disphenoid", "name": "SFS [D: (3,1) (3,1)] U/m SFS [D: (3,1) (3,1)], m = [ -1,2 | 0,1 ] : #1"}
+{"isosig": "lLLPwvQQcaceedhikjkjknkxknnkakanx", "sqlens": [3, 4, 3, 3, 3, 4, 4, 3, 4, 4, 3, 3], "census": "closed", "shape": "disphenoid", "name": "SFS [D: (3,1) (3,1)] U/m SFS [D: (2,1) (2,1) (2,1)], m = [ 0,1 | 1,1 ] : #1"}
+{"isosig": "lLLPwvQQcaceedhikjkjknkxknnkanakx", "sqlens": [3, 4, 3, 3, 3, 4, 4, 3, 3, 4, 4, 3], "census": "closed", "shape": "disphenoid", "name": "SFS [D: (3,1) (3,1)] U/m SFS [M/n2: (2,1)], m = [ 0,1 | 1,0 ] : #1"}
+{"isosig": "lLLPwvQQcaceedhijkjkknkxknnkvhvqx", "sqlens": [3, 4, 3, 3, 3, 4, 4, 3, 3, 4, 4, 3], "census": "closed", "shape": "disphenoid", "name": "SFS [D: (3,1) (3,1)] U/m SFS [M/n2: (2,1)], m = [ 0,1 | 1,0 ] : #2"}
+{"isosig": "lLLzLPMQcacehgijkikjknkxaxaxxkhnq", "sqlens": [3, 4, 3, 3, 3, 4, 4, 3, 4, 3, 3, 4], "census": "closed", "shape": "disphenoid", "name": "Hyp_1.82434432 (Z_8) : #6"}
+{"isosig": "lLLvALQQcbeghjiikjjkkhhhaasjhaqqa", "sqlens": [3, 4, 3, 4, 3, 3, 3, 3, 4, 3, 4, 4], "census": "closed", "shape": "disphenoid", "name": "Hyp_2.02988321 (Z_2 + Z_6) : #6"}
+{"isosig": "lLvPvQQMcafehijihijkkjqxxxahaxhqj", "sqlens": [3, 4, 3, 3, 4, 3, 3, 3, 4, 3, 4, 4], "census": "closed", "shape": "disphenoid", "name": "Hyp_2.02988321 (Z_56) : #27"}
+{"isosig": "mLLLAvQAQbefgfkiikjlllhhqhqaqxaqaqa", "sqlens": [3, 4, 3, 4, 3, 3, 3, 4, 4, 3, 4, 3, 4], "census": "hw", "shape": "disphenoid", "name": "HW_2.6667447834490598_174"}
+{"isosig": "ovvLAPzAQQcghijfikmlnnmnlmqqqxqggxrhxhabh", "sqlens": [4, 3, 3, 3, 3, 4, 4, 3, 4, 3, 3, 3, 4, 3, 4], "census": "hw", "shape": "disphenoid", "name": "HW_4.4031550166948581_2027"}
+{"isosig": "pvLvLvMQQQQeikimojklnmnlmoocakvvhckkvkvvcqa", "sqlens": [3, 3, 4, 4, 3, 3, 3, 4, 3, 4, 3, 3, 4, 4, 4, 3], "census": "hw", "shape": "disphenoid", "name": "HW_4.6860342738026125_2980"}
+{"isosig": "qLLvvLvQQQQkachkmplkljlmonpopnkaxxcvvckvnvkckv", "sqlens": [3, 4, 3, 3, 3, 4, 4, 3, 4, 3, 3, 4, 3, 3, 4, 4, 3], "census": "hw", "shape": "disphenoid", "name": "HW_5.3922551851322333_6705"}
+{"isosig": "qLLvLMvwQQQkacjihjoiooplmnnppnkqhahnkkchkvkvxq", "sqlens": [3, 4, 3, 3, 3, 4, 4, 3, 4, 3, 4, 3, 3, 4, 3, 4, 3], "census": "hw", "shape": "disphenoid", "name": "HW_5.5436023056496080_7720"}
