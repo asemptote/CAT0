@@ -173,6 +173,15 @@ strictly inside I_m (by the lemma applied to the edges crossed): the bead is
 recorded. If E = −S every direction in I_m gives a geodesic of length π: the
 lune is recorded (with `pi_beads`). ∎
 
+In Lean (`lean/VLink/Complete.lean`) this is `enumerateBeads_complete`: every
+bead `checkBead` accepts is found by the kernel's `enumerateBeads` (a π-bead
+as one with the same strip and ends). The lemma is `visible_crossing`; the
+interval invariant is that the bead's direction stays strictly inside the
+current interval (`intersect_within`, by the Plücker relation for
+det(S, ·, ·)); the endpoint E is the last triangle's new vertex because the
+geodesic cannot end at an end of the edge it has just crossed
+(`end_off_edge`).
+
 Termination: a branch is cut when I_k = ∅ or a vertex is parallel to S; a
 strip longer than 4× the number of link triangles raises an error rather than
 being silently dropped (never observed). Evidence beyond the proof:
@@ -245,11 +254,13 @@ only make the certificate harder to satisfy, never unsound.
   In the Lean formalisation (`lean/VLink/Soundness.lean`) these are five
   axioms about the opaque predicate `LocallyCAT0`; the soundness of both
   certificate checks is proved from them (`checkFalse_sound`,
-  `checkTrue_sound`), together with most of this note — §1 (arithmetic, angle
-  sums), §2 (development), §4 (bead checks), §5 (junction sums), §6 (trees) —
-  as Lean theorems. Still argued only here: bead
-  enumeration completeness (§3); positive definiteness (§2), the fan walk
-  (§5) and the crossing order (§4) are now Lean theorems too.
+  `checkTrue_sound`), together with the rest of this note as Lean theorems:
+  §1 (arithmetic, angle sums), §2 (positive definiteness, development), §3
+  (enumeration completeness), §4 (bead checks, crossing order), §5 (junction
+  sums, the fan walk), §6 (trees). The axioms are stated over the beads and
+  junctions the kernel accepts (`ShortNecklace`), so what they assume beyond
+  the literature is that these are the beads and junctions of §0, which is
+  what the Lean descriptions of `checkBead` and `junctionFan` say.
 - That `tri.py` decodes isosigs as Regina does (tested, §2: the statement
   "isosig X with squared lengths L" refers to Regina's triangulation and edge
   numbering). Regina itself is no longer used by the kernel.

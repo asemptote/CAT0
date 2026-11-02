@@ -523,7 +523,7 @@ theorem crosses_ok_half {G : Gram} {S Q A B : V3}
     ∃ α β γ δ : ℝ, 0 < α ∧ 0 < β ∧
       α • A.val + β • B.val = γ • S.val + δ • Q.val ∧
       0 < δ * (bform G.toMat Q.val Q.val * bform G.toMat S.val S.val -
-        bform G.toMat Q.val S.val ^ 2) := by
+        bform G.toMat Q.val S.val ^ 2) ∧ rdet A.val B.val S.val ≠ 0 := by
   unfold crosses at h
   simp only [↓reduceIte] at h
   cases hzS : isZero (det3 A B S) with
@@ -587,7 +587,11 @@ theorem crosses_ok_half {G : Gram} {S Q A B : V3}
     split_ifs
     · ext i; simp [Pi.sub_apply, Pi.smul_apply, smul_eq_mul]; ring
     · ext i; simp [Pi.sub_apply, Pi.smul_apply, smul_eq_mul]; ring
-  refine ⟨α, β, σ * dQ, -(σ * dS), hα, hβ, hY.symm.trans hYcomb, ?_⟩
+  have hdS0 : dS ≠ 0 := by
+    show rdet A.val B.val S.val ≠ 0
+    rw [← val_det3]; intro h0
+    exact absurd ((isZero_ok hzS).mpr h0) (by simp)
+  refine ⟨α, β, σ * dQ, -(σ * dS), hα, hβ, hY.symm.trans hYcomb, ?_, hdS0⟩
   have hev : e.val = bform G.toMat Y.val Q.val * bform G.toMat S.val S.val -
       bform G.toMat Y.val S.val * bform G.toMat Q.val S.val := by
     simp [hedef, MQ.val_sub, MQ.val_mul, val_dot]

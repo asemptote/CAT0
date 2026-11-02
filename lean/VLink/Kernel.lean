@@ -754,78 +754,148 @@ lemma Bead.make_ok {ts : Array Nat} {start stop : Nat} {G : Gram} {pos : Array (
   · cases h
     simp
 
-/-! ### Bead enumeration (completeness: docs/proofs.md §3) -/
+/-! ### Bead enumeration (completeness: `VLink/Complete.lean`, docs/proofs.md §3) -/
 
-def visible (S A B : Vec) : KM (Option (Vec × Vec)) := do
-  let o ← sgn (det3 S A B)
-  if o == 0 then return none
-  return some (if o > 0 then (A, B) else (B, A))
+/-- The directions at `S` toward the open arc `AB`, as an oriented pair
+`(L, R)` with `det(S, L, R) > 0`; `none` if `S` is on the great circle of `AB`. -/
+def visible (S A B : Vec) : KM (Option (Vec × Vec)) :=
+  match sgn (det3 S A B) with
+  | .error e => .error e
+  | .ok o => .ok (if o = 0 then none else some (if o > 0 then (A, B) else (B, A)))
 
-def inside (S L R X : Vec) (strict : Bool) : KM Bool := do
-  let a ← sgn (det3 S L X)
-  let b ← sgn (det3 S X R)
-  return if strict then a > 0 && b > 0 else a ≥ 0 && b ≥ 0
+/-- Is `X` inside the interval of directions `(L, R)` at `S`? -/
+def inside (S L R X : Vec) (strict : Bool) : KM Bool :=
+  match sgn (det3 S L X), sgn (det3 S X R) with
+  | .ok a, .ok b => .ok (if strict then decide (a > 0 ∧ b > 0) else decide (a ≥ 0 ∧ b ≥ 0))
+  | .error e, _ => .error e
+  | _, .error e => .error e
 
-def intersect (S : Vec) (I1 I2 : Vec × Vec) : KM (Option (Vec × Vec)) := do
-  let (L1, R1) := I1
-  let (L2, R2) := I2
-  let L ← if ← inside S L1 R1 L2 false then pure (some L2)
-    else if ← inside S L2 R2 L1 false then pure (some L1) else pure none
-  let R ← if ← inside S L1 R1 R2 false then pure (some R2)
-    else if ← inside S L2 R2 R1 false then pure (some R1) else pure none
-  match L, R with
-  | some L, some R => return if (← sgn (det3 S L R)) > 0 then some (L, R) else none
-  | _, _ => return none
+/-- One end of the intersection of two intervals: `X2` if it lies in `I1`,
+else `X1` if it lies in `I2`. -/
+def pickEnd (S : Vec) (I1 I2 : Vec × Vec) (X1 X2 : Vec) : KM (Option Vec) :=
+  match inside S I1.1 I1.2 X2 false with
+  | .error e => .error e
+  | .ok true => .ok (some X2)
+  | .ok false =>
+    match inside S I2.1 I2.2 X1 false with
+    | .error e => .error e
+    | .ok true => .ok (some X1)
+    | .ok false => .ok none
+
+def intersect (S : Vec) (I1 I2 : Vec × Vec) : KM (Option (Vec × Vec)) :=
+  match pickEnd S I1 I2 I1.1 I2.1, pickEnd S I1 I2 I1.2 I2.2 with
+  | .ok (some L), .ok (some R) =>
+    match sgn (det3 S L R) with
+    | .ok s => .ok (if s > 0 then some (L, R) else none)
+    | .error e => .error e
+  | .error e, _ => .error e
+  | _, .error e => .error e
+  | _, _ => .ok none
+
+/-- Record the strip ending at its new vertex `r` as a bead, if it is one. -/
+def recordBead (G : Gram) (piBeads : Bool) (ts2 : Array Nat) (pos2 : Array (Array Vec))
+    (steps2 : Array Nat) (start r : Nat) (S E : Vec) (iv : Vec × Vec) (par : Int)
+    (out : Array Bead) : KM (Array Bead) :=
+  if par < 0 then
+    if piBeads then
+      match Bead.make ts2 start r G pos2 steps2 none with
+      | .ok b => .ok (out.push b)
+      | .error e => .error e
+    else .ok out
+  else if par = 0 then
+    match inside S iv.1 iv.2 E true with
+    | .error e => .error e
+    | .ok false => .ok out
+    | .ok true =>
+      match Bead.make ts2 start r G pos2 steps2 none with
+      | .ok b => .ok (out.push b)
+      | .error e => .error e
+  else .ok out
+
+/-- Continue across the edge opposite vertex `dn` of the triangle just
+entered (new vertex `r` at `E`), if some direction still crosses every edge. -/
+def growBranch (G : Gram) (rec : Nat → Vec × Vec → Array Bead → KM (Array Bead))
+    (S E : Vec) (P2 : Array Vec) (r dn : Nat) (iv : Vec × Vec) (out : Array Bead) :
+    KM (Array Bead) :=
+  match parallel G S P2[3 - r - dn]! with
+  | .error e => .error e
+  | .ok p =>
+    if p ≠ 0 then .ok out
+    else
+      match visible S E P2[3 - r - dn]! with
+      | .error e => .error e
+      | .ok none => .ok out
+      | .ok (some iv2) =>
+        match intersect S iv iv2 with
+        | .error e => .error e
+        | .ok none => .ok out
+        | .ok (some new) => rec dn new out
 
 /-- Cross the edge opposite vertex `d` of the strip's last triangle (`_grow`). -/
 def grow (L : Link) (G : Gram) (piBeads : Bool) :
     Nat → Array Nat → Array (Array Vec) → Array Nat → Nat → Vec → Nat → Vec × Vec →
       Array Bead → KM (Array Bead)
-  | 0, _, _, _, _, _, _, _, _ => throw "bead strip longer than 4x the link: growth not terminating?"
-  | fuel + 1, ts, pos, steps, start, S, d, iv, out => do
+  | 0, _, _, _, _, _, _, _, _ => .error "bead strip longer than 4x the link: growth not terminating?"
+  | fuel + 1, ts, pos, steps, start, S, d, iv, out =>
     let t := ts.back!
-    let t2 := (L.adj[t]!)[d]!
-    let (_, P2) := step L pos.back! t d
-    let ts2 := ts.push t2
+    let P2 := (step L pos.back! t d).2
+    let ts2 := ts.push ((L.adj[t]!)[d]!)
     let pos2 := pos.push P2
     let steps2 := steps.push d
     let r := ((L.glue[t]!)[d]!)[d]!
     let E := P2[r]!
-    let par ← parallel G S E
-    let mut out := out
-    if par < 0 then
-      if piBeads then out := out.push (← Bead.make ts2 start r G pos2 steps2 none)
-    else if par == 0 then
-      if ← inside S iv.1 iv.2 E true then
-        out := out.push (← Bead.make ts2 start r G pos2 steps2 none)
-    for dn in [(r + 1) % 3, (r + 2) % 3] do
-      let y := 3 - r - dn
-      if par != 0 then continue
-      if (← parallel G S P2[y]!) != 0 then continue
-      match ← visible S E P2[y]! with
-      | none => continue
-      | some iv2 =>
-        match ← intersect S iv iv2 with
-        | none => continue
-        | some new => out ← grow L G piBeads fuel ts2 pos2 steps2 start S dn new out
-    return out
+    match parallel G S E with
+    | .error e => .error e
+    | .ok par =>
+      match recordBead G piBeads ts2 pos2 steps2 start r S E iv par out with
+      | .error e => .error e
+      | .ok out1 =>
+        if par ≠ 0 then .ok out1
+        else
+          let rec' := fun dn new o => grow L G piBeads fuel ts2 pos2 steps2 start S dn new o
+          match growBranch G rec' S E P2 r ((r + 1) % 3) iv out1 with
+          | .error e => .error e
+          | .ok out2 => growBranch G rec' S E P2 r ((r + 2) % 3) iv out2
 
-def enumerateBeads (L : Link) (piBeads : Bool) : KM (Array Bead) := do
-  let mut out := #[]
-  for t in [0:L.n] do
-    let G := L.G[t]!
-    for d0 in [0:3] do
-      let P := E3
-      let a := (d0 + 1) % 3
-      let b := (d0 + 2) % 3
-      let S := P[d0]!
-      out := out.push (← Bead.make #[t] d0 a G #[P] #[] none)
-      out := out.push (← Bead.make #[t] d0 b G #[P] #[] none)
-      if (← parallel G S P[a]!) != 0 || (← parallel G S P[b]!) != 0 then continue
-      match ← visible S P[a]! P[b]! with
-      | none => continue
-      | some iv => out ← grow L G piBeads (4 * L.n + 1) #[t] #[P] #[] d0 S d0 iv out
-  return out
+/-- The beads starting at corner `d0` of link triangle `t`: its two edges, and
+the strips grown across the opposite edge. -/
+def enumStart (L : Link) (piBeads : Bool) (t d0 : Nat) (out : Array Bead) : KM (Array Bead) :=
+  let G := L.G[t]!
+  let P := E3
+  let a := (d0 + 1) % 3
+  let b := (d0 + 2) % 3
+  let S := P[d0]!
+  match Bead.make #[t] d0 a G #[P] #[] none with
+  | .error e => .error e
+  | .ok ba =>
+    match Bead.make #[t] d0 b G #[P] #[] none with
+    | .error e => .error e
+    | .ok bb =>
+      let out := (out.push ba).push bb
+      match parallel G S P[a]!, parallel G S P[b]! with
+      | .ok pa, .ok pb =>
+        if pa ≠ 0 ∨ pb ≠ 0 then .ok out
+        else
+          match visible S P[a]! P[b]! with
+          | .error e => .error e
+          | .ok none => .ok out
+          | .ok (some iv) => grow L G piBeads (4 * L.n + 1) #[t] #[P] #[] d0 S d0 iv out
+      | .error e, _ => .error e
+      | _, .error e => .error e
+
+def enumList (L : Link) (piBeads : Bool) : List (Nat × Nat) → Array Bead → KM (Array Bead)
+  | [], out => .ok out
+  | p :: rest, out =>
+    match enumStart L piBeads p.1 p.2 out with
+    | .error e => .error e
+    | .ok out' => enumList L piBeads rest out'
+
+/-- The corners `(t, d0)` of the link triangles, in enumeration order. -/
+def corners (L : Link) : List (Nat × Nat) :=
+  (List.range L.n).flatMap fun t => (List.range 3).map fun d0 => (t, d0)
+
+def enumerateBeads (L : Link) (piBeads : Bool) : KM (Array Bead) :=
+  enumList L piBeads (corners L) #[]
 
 /-! ### Junctions -/
 

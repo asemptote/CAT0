@@ -16,14 +16,18 @@ certificates built on it.
 | L3 development | `VLink/Develop.lean`, `VLink/Kernel.lean` | proved: each step places the neighbouring link triangle isometrically, on the far side of the shared edge (`step_iso`, `stepWith_iso`), so in the frame of a strip's first triangle every developed triangle has exactly its own Gram matrix (`develop_iso`) |
 | L3 junctions | `VLink/Kernel.lean` | proved: the exact angle at each side of a junction is the sum of the corner angles listed by the fan walk (`junctionFan_ok`), each the true tangent angle (`tangent_angle`); the walk turns around the junction's link vertex one glued triangle at a time (`fan_step`), and every angle it adds is a corner at that vertex (`fanWalk_corners`) |
 | L3 beads in order | `VLink/Develop.lean`, `VLink/Kernel.lean` | proved: an accepted bead's segment meets its strip's interior edges at strictly increasing parameters, so it traverses the strip in order (`order_step`, `checkBead_order`); this needs the strip never to turn straight back across the edge it just crossed, which both kernels now check |
+| L3 bead enumeration | `VLink/Complete.lean` | proved: every bead the kernel accepts is found by its own enumeration (`enumerateBeads_complete`; a π-bead as one with the same strip and ends): the bead's direction lies strictly inside the interval of directions toward each edge it crosses (`visible_crossing`) and hence inside their intersections (`intersect_within`), so the search never abandons its strip, and the strip ends at the new vertex of its last triangle (`end_off_edge`) |
 | L4 soundness | `VLink/Soundness.lean` | proved from the cited theorems: an accepted False certificate implies `¬ LocallyCAT0` (`checkFalse_sound`), an accepted True certificate implies `LocallyCAT0` (`checkTrue_sound`) |
 
 `LocallyCAT0 isosig sqlens` is opaque (Mathlib has no piecewise Euclidean
 complexes); five axioms, stated in terms of what the kernel computes,
 characterise it (`VLink/Soundness.lean`): a degenerate tetrahedron or a short
-edge rules it out; a short necklace (`ShortNecklace`) rules it out; valid
-tetrahedra, edges `≥ 2π` and no short necklace of the enumerated beads
-(`NoShortNecklace`, with or without π-beads) imply it. `#print axioms`
+edge rules it out; a short necklace (`ShortNecklace`: accepted beads,
+junctions `≥ π`, length `< 2π`) rules it out; valid tetrahedra, edges `≥ 2π`
+and no short necklace (with or without π-beads) imply it. Both directions use
+the same `ShortNecklace`. A True certificate's trees show that no necklace of
+the *enumerated* beads is short (`NoShortNecklace`); by completeness that
+means no short necklace at all (`not_short_of_enum`). `#print axioms`
 confirms the two soundness theorems use exactly these and Lean's standard
 axioms (`propext`, `Classical.choice`, `Quot.sound`), no `sorry`.
 
@@ -34,9 +38,12 @@ Gram matrices (`link_gram_posdef`), isometric development (`develop_iso`),
 geodesics crossing their strips' edges in order (`checkBead_ok`,
 `checkBead_order`), lengths and corner angles (`length_angle`,
 `tangent_angle`), junction sums over the fan around the link vertex
-(`junctionFan_ok`, `fanWalk_corners`), shortest-path trees
-(`checkVertexTrees_ok`) — and one fact still argued on paper
-(`docs/proofs.md` §3): bead enumeration is complete.
+(`junctionFan_ok`, `fanWalk_corners`), complete bead enumeration
+(`enumerateBeads_complete`), shortest-path trees (`checkVertexTrees_ok`).
+Nothing in `docs/proofs.md` is left to paper alone. What the axioms add to
+the literature is that the kernel's accepted beads and junctions are the
+beads and junctions of the cited theorems, which is what the Lean
+descriptions of `checkBead` and `junctionFan` above say.
 
 No proof uses linear independence of square roots or any normal form: zero
 tests go through the sign, and the sign algorithm is sound for any
@@ -91,6 +98,5 @@ everywhere.
 
 ## Next
 
-- Prove bead-enumeration completeness in Lean (the visible-interval lemma and
-  the search's interval invariant), and restate `cat0_of_no_short_necklace`
-  over all accepted beads, so that the axioms are the cited theorems alone.
+- Nothing outstanding in the kernel proofs. Still trusted outside Lean: that
+  `Tri.lean` (and `tri.py`) decode isosigs as Regina does (tested).
