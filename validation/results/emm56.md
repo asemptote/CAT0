@@ -80,6 +80,7 @@ observation "locally CAT(0) ⇔ edge condition" holds on all 125.
 
 No 5/6\* triangulation was found. Each vertex link of one is a triangulated
 sphere with twelve pairwise non-adjacent degree-5 vertices, so at least 32
-vertices (the dual of the truncated icosahedron); a one-vertex 5/6\*
-triangulation has at least 15 tetrahedra, and the census sizes and these
-walks stay below the sizes needed.
+vertices (the dual of the truncated icosahedron), so a one-vertex 5/6\*
+triangulation has at least 15 tetrahedra and very constrained vertex links;
+neither the censuses nor these walks (which never got below 4 bad triangles)
+contain one. A positive control would need a construction, not a search.
