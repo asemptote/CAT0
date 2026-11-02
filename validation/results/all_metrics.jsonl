@@ -1,0 +1,106 @@
+{"isosig": "gLLPQaceedffnkxknnn", "sqlens": [1, 2, 3, 1, 1, 2, 2], "name": "examples_1 #0"}
+{"isosig": "gvLQQcedffeffsfhqjh", "sqlens": [1, 2, 3, 2, 1, 2, 1], "name": "examples_1 #1"}
+{"isosig": "gvLQQedfedffrwawrhh", "sqlens": [2, 3, 1, 1, 1, 2, 2], "name": "examples_1 #2"}
+{"isosig": "gvLQQcdefeffncnhchx", "sqlens": [3, 1, 2, 2, 1, 1, 2], "name": "examples_1 #3"}
+{"isosig": "iLLPPPcaceefgghhnkxvcaqvn", "sqlens": [1, 2, 3, 1, 1, 2, 2, 1, 2], "name": "examples_1 #4"}
+{"isosig": "kLLPwzQkaceedgiihjjnkxknxkknan", "sqlens": [1, 2, 3, 1, 1, 2, 2, 1, 1, 2, 2], "name": "examples_1 #5"}
+{"isosig": "oLLvzLLQQQcbehlmmklnknmnklxxahaqhqxhaqaqq", "sqlens": [1, 2, 1, 3, 2, 1, 3, 1, 2, 1, 2, 2, 1, 2, 2], "name": "hyperbolic_candidate #0"}
+{"isosig": "gLLPQbefefefhhxxqxh", "sqlens": [3, 4, 3, 4, 3, 3, 4], "name": "examples_3_disphenoid #0"}
+{"isosig": "gLLPQaceedffnkxknnn", "sqlens": [3, 4, 3, 3, 3, 4, 4], "name": "examples_3_disphenoid #1"}
+{"isosig": "gvLQQdefdeffrrawwhh", "sqlens": [4, 3, 3, 3, 4, 4, 3], "name": "examples_3_disphenoid #2"}
+{"isosig": "gvLQQcedffeffsfhqjh", "sqlens": [3, 4, 3, 4, 3, 4, 3], "name": "examples_3_disphenoid #3"}
+{"isosig": "gvLQQedfedffrwawrhh", "sqlens": [4, 3, 3, 3, 3, 4, 4], "name": "examples_3_disphenoid #4"}
+{"isosig": "gvLQQdefdeffrwawrhh", "sqlens": [4, 3, 3, 4, 4, 3, 3], "name": "examples_3_disphenoid #5"}
+{"isosig": "gvLQQcdefeffncnhchx", "sqlens": [3, 3, 4, 4, 3, 3, 4], "name": "examples_3_disphenoid #6"}
+{"isosig": "iLLPPPcaceefgghhnkxvcaqvn", "sqlens": [3, 4, 3, 3, 3, 4, 4, 3, 4], "name": "examples_3_disphenoid #7"}
+{"isosig": "jLLvAQQcdfeighhiiqcaqqncnxh", "sqlens": [3, 3, 4, 4, 3, 3, 4, 3, 3, 4], "name": "examples_3_disphenoid #8"}
+{"isosig": "kLLPwzQkaceedgiihjjnkxknxkknan", "sqlens": [3, 4, 3, 3, 3, 4, 4, 3, 3, 4, 4], "name": "examples_3_disphenoid #9"}
+{"isosig": "kLLPwPPkaceedghijijnkxknxnkakk", "sqlens": [3, 4, 3, 3, 3, 4, 4, 3, 3, 4, 4], "name": "examples_3_disphenoid #10"}
+{"isosig": "kLLzLPQkacehgijhjijnkxaqqxkckv", "sqlens": [3, 4, 3, 3, 3, 4, 4, 3, 4, 3, 4], "name": "examples_3_disphenoid #11"}
+{"isosig": "kLLzLPQkacehgijhjijnkxaxaxknkn", "sqlens": [3, 4, 3, 3, 3, 4, 4, 3, 4, 3, 4], "name": "examples_3_disphenoid #12"}
+{"isosig": "lLLPALzQcaceedfhikjjknkxknnnxkkkk", "sqlens": [3, 4, 3, 3, 3, 4, 4, 3, 3, 4, 3, 4], "name": "examples_3_disphenoid #13"}
+{"isosig": "lLLPwvQQcaceedhikjkjknkxknnkakanx", "sqlens": [3, 4, 3, 3, 3, 4, 4, 3, 4, 4, 3, 3], "name": "examples_3_disphenoid #14"}
+{"isosig": "lLLPwvQQcaceedhikjkjknkxknnkanakx", "sqlens": [3, 4, 3, 3, 3, 4, 4, 3, 3, 4, 4, 3], "name": "examples_3_disphenoid #15"}
+{"isosig": "lLLPwvQQcaceedhijkjkknkxknnkvhvqx", "sqlens": [3, 4, 3, 3, 3, 4, 4, 3, 3, 4, 4, 3], "name": "examples_3_disphenoid #16"}
+{"isosig": "lLLzLPMQcacehgijkikjknkxaxaxxkhnq", "sqlens": [3, 4, 3, 3, 3, 4, 4, 3, 4, 3, 3, 4], "name": "examples_3_disphenoid #17"}
+{"isosig": "lLLvALQQcbeghjiikjjkkhhhaasjhaqqa", "sqlens": [3, 4, 3, 4, 3, 3, 3, 3, 4, 3, 4, 4], "name": "examples_3_disphenoid #18"}
+{"isosig": "lLvPvQQMcafehijihijkkjqxxxahaxhqj", "sqlens": [3, 4, 3, 3, 4, 3, 3, 3, 4, 3, 4, 4], "name": "examples_3_disphenoid #19"}
+{"isosig": "mLLLAvQAQbefgfkiikjlllhhqhqaqxaqaqa", "sqlens": [3, 4, 3, 4, 3, 3, 3, 4, 4, 3, 4, 3, 4], "name": "examples_3_disphenoid #20"}
+{"isosig": "ovvLAPzAQQcghijfikmlnnmnlmqqqxqggxrhxhabh", "sqlens": [4, 3, 3, 3, 3, 4, 4, 3, 4, 3, 3, 3, 4, 3, 4], "name": "examples_3_disphenoid #21"}
+{"isosig": "pvLvLvMQQQQeikimojklnmnlmoocakvvhckkvkvvcqa", "sqlens": [3, 3, 4, 4, 3, 3, 3, 4, 3, 4, 3, 3, 4, 4, 4, 3], "name": "examples_3_disphenoid #22"}
+{"isosig": "qLLvvLvQQQQkachkmplkljlmonpopnkaxxcvvckvnvkckv", "sqlens": [3, 4, 3, 3, 3, 4, 4, 3, 4, 3, 3, 4, 3, 3, 4, 4, 3], "name": "examples_3_disphenoid #23"}
+{"isosig": "qLLvLMvwQQQkacjihjoiooplmnnppnkqhahnkkchkvkvxq", "sqlens": [3, 4, 3, 3, 3, 4, 4, 3, 4, 3, 4, 3, 3, 4, 3, 4, 3], "name": "examples_3_disphenoid #24"}
+{"isosig": "gvLQQcedffeffsfhqjh", "sqlens": [1, 2, 1, 2, 3, 2, 1], "name": "SFS [RP2/n2: (2,1) (2,-1)]", "flat": true}
+{"isosig": "gvLQQedfedffrwawrhh", "sqlens": [2, 1, 1, 1, 3, 2, 2], "name": "T x S1", "flat": true}
+{"isosig": "gvLQQedfedffrwawrhh", "sqlens": [2, 1, 1, 3, 1, 2, 2], "name": "T x S1", "flat": true}
+{"isosig": "gvLQQedfedffrwawrhh", "sqlens": [2, 1, 3, 1, 1, 2, 2], "name": "T x S1", "flat": true}
+{"isosig": "gvLQQcdefeffncnhchx", "sqlens": [1, 1, 2, 2, 1, 3, 2], "name": "KB/n2 x~ S1", "flat": true}
+{"isosig": "gvLQQcdefeffncnhchx", "sqlens": [1, 1, 2, 2, 3, 1, 2], "name": "KB/n2 x~ S1", "flat": true}
+{"isosig": "gvLQQcdefeffncnhchx", "sqlens": [1, 3, 2, 2, 1, 1, 2], "name": "KB/n2 x~ S1", "flat": true}
+{"isosig": "lLLvQLQMcbeghfijjihkkhhhxhahhajxj", "sqlens": [3, 4, 3, 4, 3, 3, 3, 3, 4, 4, 4, 3], "name": "SFS [D: (2,1) (4,3)] U/m SFS [D: (3,2) (3,2)], m = [ -1,1 | 1,0 ]", "flat": false}
+{"isosig": "mLLzLzAQQacehjjikilkllnkxaaxcvkqvhh", "sqlens": [3, 4, 3, 3, 3, 4, 4, 3, 4, 3, 3, 4, 4], "name": "SFS [D: (2,1) (3,1)] U/m SFS [M/n2: (3,1)], m = [ -1,1 | 0,1 ]", "flat": false}
+{"isosig": "mLLzLPwQQacehjgjillkklnkxaaxxkhahxk", "sqlens": [3, 4, 3, 3, 3, 4, 4, 3, 4, 3, 3, 4, 4], "name": "SFS [D: (2,1) (3,1)] U/m SFS [M/n2: (3,1)], m = [ -1,1 | 0,1 ]", "flat": false}
+{"isosig": "nLLzLzPMQkacehgjlikmlklmnkxaavkkcxcvnn", "sqlens": [3, 4, 3, 3, 3, 4, 4, 3, 4, 3, 3, 4, 3, 4], "name": "SFS [D: (2,1) (2,1)] U/m SFS [A: (2,1)] U/n SFS [D: (3,1) (3,2)], m = [ 0,1 | 1,0 ], n = [ 0,1 | 1,1 ]", "flat": false}
+{"isosig": "lLvwMLQQcbegfkhjhkjjkhahhhwhrhahh", "sqlens": [4, 3, 3, 3, 4, 3, 4, 3, 3, 3, 4, 4], "name": "SFS [D: (2,1) (2,1)] U/m SFS [D: (3,1) (3,1)], m = [ -1,2 | 0,1 ]", "flat": false}
+{"isosig": "sLvPvLPwAPPQQafejhminoponrpqpqqrjqxaaqaaahaxxaqasjj", "sqlens": [3, 4, 3, 3, 4, 3, 3, 3, 4, 3, 3, 4, 4, 3, 4, 3, 4, 3, 4], "name": "HW_5.9577738571888569 #10123", "flat": false}
+{"isosig": "qLLvALLPQzQkbeghjljmnknooppophhhaaaxxhqxaqxqxh", "sqlens": [3, 4, 3, 4, 3, 3, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 4], "name": "HW_4.4153324774538658 #2075", "flat": false}
+{"isosig": "pLvvALvQQQQcgfjokmonoklknmnhhhjhaqqqxahhooo", "sqlens": [3, 4, 3, 3, 3, 3, 4, 3, 4, 3, 3, 3, 3, 4, 4, 4], "name": "HW_4.4654245267713809 #2240", "flat": false}
+{"isosig": "rLvLLMLzzQQQcaehjhilonlmqppqpoqnxvakaxvvvnhhhhanx", "sqlens": [3, 4, 3, 3, 3, 4, 3, 4, 3, 4, 3, 3, 4, 3, 3, 4, 3, 4], "name": "HW_5.2895109584496352 #6016", "flat": false}
+{"isosig": "pLLvvLQMQAQachijlkmnlmnlooonkaqqaxvccncnxxx", "sqlens": [3, 4, 3, 3, 3, 4, 4, 3, 4, 4, 3, 3, 4, 4, 3, 3], "name": "HW_3.7588449482372843 #849", "flat": false}
+{"isosig": "mLLvLLQQQbeflkikijjkllxxxaxjxsofhxh", "sqlens": [3, 4, 3, 3, 4, 3, 3, 3, 4, 3, 4, 3, 4], "name": "HW_3.1213347730122926 #320", "flat": false}
+{"isosig": "mLLvAvQQQbeghjljkkjkllhhhaxxxqaaxxa", "sqlens": [3, 4, 3, 4, 3, 3, 3, 3, 4, 3, 4, 4, 4], "name": "HW_2.6667447834490598 #170", "flat": false}
+{"isosig": "sLvwLLzzMAQQQbeflkjomnqpoqoqrprrhahhhraaharwrwwrwwr", "sqlens": [2, 3, 1, 1, 2, 3, 2, 1, 1, 1, 1, 2, 2, 2, 1, 2, 2, 2, 1], "name": "HW_5.7024029255779638 #8733", "flat": false}
+{"isosig": "sLvwLLzzMAQQQbeflkjomnqpoqoqrprrhahhhraaharwrwwrwwr", "sqlens": [4, 3, 3, 3, 4, 3, 4, 3, 3, 3, 3, 4, 4, 4, 3, 4, 4, 4, 3], "name": "HW_5.7024029255779638 #8733", "flat": false}
+{"isosig": "qLLvLzPQzQPkcdikgijljllnonopphsjqfjjqoajjosohs", "sqlens": [3, 4, 3, 3, 3, 3, 4, 3, 4, 4, 3, 4, 3, 3, 4, 3, 4], "name": "HW_4.6517048570488517 #2850", "flat": false}
+{"isosig": "qLLvzzPPMQMkcdhigjnnmolomlpophsxojaaqqsssjoqjs", "sqlens": [3, 4, 3, 3, 3, 4, 3, 4, 4, 3, 4, 3, 4, 3, 3, 3, 4], "name": "HW_4.9068441444611604 #3944", "flat": false}
+{"isosig": "qLLvzvPMQPQkcdhgjlonommpmnonphsxjaaqhhashosofs", "sqlens": [3, 4, 3, 3, 3, 4, 3, 4, 4, 3, 3, 4, 4, 3, 3, 4, 3], "name": "HW_4.9068441444611604 #3944", "flat": false}
+{"isosig": "pLLvALzPQMQbegfjljkmnkmnnoohhhqaaqxhqaojfxj", "sqlens": [3, 4, 3, 4, 3, 3, 3, 3, 4, 4, 3, 4, 3, 3, 4, 3], "name": "HW_4.4112708341111142 #2046", "flat": false}
+{"isosig": "pLLzLzzAPQQacehghkmllknmnoonkxaaknacvkxxnnk", "sqlens": [3, 4, 3, 3, 3, 4, 4, 3, 4, 3, 3, 3, 4, 4, 3, 4], "name": "HW_3.1213347730122926 #321", "flat": false}
+{"isosig": "mLLvQLMMQbeghfijkhklklhhhxhahqjoxjj", "sqlens": [3, 4, 3, 4, 3, 3, 3, 3, 4, 4, 4, 3, 3], "name": "HW_3.1213347730122926 #321", "flat": false}
+{"isosig": "ovLLPLwAQQcdgiffhkjmnlnmnmwaxhhgwwxxaaxrb", "sqlens": [4, 3, 3, 3, 3, 4, 4, 3, 3, 3, 3, 3, 4, 4, 4], "name": "HW_3.9702896238906554 #1149", "flat": false}
+{"isosig": "pLLvAALzAQQacegihlljmlmonoonkknhaxkvavqxncv", "sqlens": [3, 4, 3, 3, 3, 4, 4, 4, 3, 3, 3, 3, 4, 3, 4, 4], "name": "HW_4.4853141052094741 #2288", "flat": false}
+{"isosig": "rLLvALPAvQQPcbefhkijlipoomnopqqxxqahfxxjaxqsjhqjj", "sqlens": [3, 4, 3, 3, 4, 3, 3, 3, 4, 3, 4, 4, 4, 3, 4, 3, 3, 4], "name": "HW_5.2878311750580237 #5993", "flat": false}
+{"isosig": "nLLzLzwQQkacehghjmklmklmnkxaaacavxakxk", "sqlens": [3, 4, 3, 3, 3, 4, 4, 3, 4, 3, 3, 4, 3, 4], "name": "HW_2.6667447834490598 #168", "flat": false}
+{"isosig": "qLLvzLPPMQPkcdeijllnkkomopppohshjaxxhaxjosaqaf", "sqlens": [3, 4, 3, 3, 3, 3, 4, 3, 4, 4, 3, 4, 3, 4, 3, 4, 3], "name": "HW_5.1454524782753654 #5082", "flat": false}
+{"isosig": "qLvLPLzzQPQkbdggkginnoompmnpphwhghbwhwrbghrrhh", "sqlens": [4, 3, 3, 3, 4, 3, 4, 3, 3, 4, 3, 4, 3, 3, 4, 4, 3], "name": "HW_5.1454524782753654 #5082", "flat": false}
+{"isosig": "qLvPvPzzPQQkafeijhkolkpmppoonjqxxaajhjoafxqxhj", "sqlens": [3, 4, 3, 3, 4, 3, 3, 3, 4, 3, 3, 4, 3, 4, 3, 4, 4], "name": "HW_5.3334895668981196 #6302", "flat": false}
+{"isosig": "qLLvzLLAQQMkbehkmnlokmnmnlppphhaaaxqhqhqhhaaqx", "sqlens": [3, 4, 3, 4, 3, 3, 3, 3, 4, 4, 3, 4, 3, 4, 3, 4, 4], "name": "HW_5.0747080320482681 #4686", "flat": false}
+{"isosig": "oLvLLLLQQQccgehjmknmkjnlmnqhqfshqhqqshsjo", "sqlens": [3, 4, 3, 3, 4, 3, 4, 3, 3, 4, 3, 3, 4, 3, 4], "name": "HW_4.1639959336085620 #1482", "flat": false}
+{"isosig": "qLLvLwMvQQQkcdjikjpollnopmpnohsffafqxxaqossjjo", "sqlens": [3, 4, 3, 3, 3, 3, 4, 3, 4, 4, 3, 3, 3, 4, 3, 4, 4], "name": "HW_4.3220970201820946 #1837", "flat": false}
+{"isosig": "rLLvLwPLQPPQcbefjlijlmkpnqopoqqxxxsaofhxxssxfssxx", "sqlens": [3, 4, 3, 3, 4, 3, 3, 3, 4, 3, 4, 4, 4, 3, 3, 4, 3, 4], "name": "HW_5.3100205237697096 #6131", "flat": false}
+{"isosig": "qLLvLLAPPMQkbefkllmjnkmmpoopphhhahhxfhhhqjjsff", "sqlens": [3, 4, 3, 4, 3, 3, 3, 3, 4, 4, 3, 4, 3, 4, 3, 3, 4], "name": "HW_5.5636678247921596 #7828", "flat": false}
+{"isosig": "sLLvAvLPQvQQQbeghmnlokoqrpqprpqrhhhaahhhqxahahqqqxa", "sqlens": [3, 4, 3, 4, 3, 3, 3, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 4, 4], "name": "HW_5.9038586101513568 #9912", "flat": false}
+{"isosig": "qLLvAMwzPPQkbeghggjklmnopopophhhaffqhoojoaoaja", "sqlens": [3, 4, 3, 4, 3, 3, 3, 3, 4, 3, 4, 3, 4, 4, 3, 3, 4], "name": "HW_5.1838504103660461 #5292", "flat": false}
+{"isosig": "pLLLvvQwQQQcdfkjlkmonmmnnoohsxqaxaahqqfssfj", "sqlens": [3, 4, 3, 3, 3, 3, 4, 3, 4, 3, 3, 4, 4, 3, 4, 3], "name": "HW_4.8688568510980632 #3776", "flat": false}
+{"isosig": "pLLLzLPAMAQacghglijimmnlooonknxnqxcnhaxkvkn", "sqlens": [3, 4, 3, 3, 3, 4, 4, 3, 4, 3, 4, 3, 3, 3, 4, 4], "name": "HW_4.5186283940869813 #2385", "flat": false}
+{"isosig": "rLLvALLPQvQQcbeghjljmnknoqqpqpphhhaaaxxhqxqxqxhof", "sqlens": [3, 4, 3, 4, 3, 3, 3, 4, 3, 4, 3, 4, 3, 4, 3, 3, 4, 4], "name": "HW_5.1802235977121676 #5272", "flat": false}
+{"isosig": "rLLvzvQLLQQQccdhlgjomlmqpnqnoqphsxajaqafsjsfsfojj", "sqlens": [3, 4, 3, 3, 3, 4, 3, 4, 4, 3, 3, 4, 3, 4, 3, 3, 4, 3], "name": "HW_5.7866004646640832 #9243", "flat": false}
+{"isosig": "pLLvALLQAPQbeghjllhlmknooonhhxhaaqjhhahxaqs", "sqlens": [3, 4, 3, 4, 3, 3, 3, 3, 4, 4, 4, 3, 4, 3, 4, 3], "name": "HW_4.7517019655178995 #3291", "flat": false}
+{"isosig": "pLLvLvMQQAQcdfglnlkjmmnkmoohsjshaaxsxaaqohj", "sqlens": [3, 4, 3, 3, 3, 3, 4, 3, 4, 4, 3, 3, 4, 3, 3, 4], "name": "HW_4.5793848765651823 #2591", "flat": false}
+{"isosig": "rLLPvLzMPAPQccdefillknnmopqpqqphsxxhqqqffjxqaqqfj", "sqlens": [3, 4, 3, 3, 3, 3, 4, 3, 4, 4, 4, 4, 3, 4, 3, 3, 4, 3], "name": "HW_4.7293909912801124 #3181", "flat": false}
+{"isosig": "pLLvvMPAQPQacihiiklnnloomnonkaaaaxxxxnhqkaa", "sqlens": [3, 4, 3, 3, 3, 4, 4, 3, 4, 3, 4, 3, 4, 4, 3, 3], "name": "HW_4.4543736948278118 #2190", "flat": false}
+{"isosig": "oLvwLQwAMQcbefijghlklkmnnnhahrrwwaahawrrw", "sqlens": [4, 3, 3, 3, 4, 3, 4, 3, 3, 3, 3, 4, 4, 4, 4], "name": "HW_3.6638623767088761 #735", "flat": false}
+{"isosig": "pLLLPLMLQzQcdgefjhikmmlnnooqkqqkqcqvqacqvvk", "sqlens": [3, 3, 4, 4, 3, 3, 3, 3, 4, 3, 4, 4, 3, 4, 3, 4], "name": "HW_4.1566754268179429 #1471", "flat": false}
+{"isosig": "pLLvLzwAQQQcdfkgmnnlolmomonhsjxsahxxqxahfjs", "sqlens": [3, 4, 3, 3, 3, 3, 4, 3, 4, 4, 3, 3, 4, 4, 3, 4], "name": "HW_4.4646589115486808 #2232", "flat": false}
+{"isosig": "pLLLwPzLPQQcegfjikjlomnnmoohqhaqvqxannvcvkc", "sqlens": [3, 3, 4, 4, 3, 3, 4, 3, 4, 3, 3, 3, 4, 4, 3, 4], "name": "HW_3.7588449482372843 #854", "flat": false}
+{"isosig": "qLLvvLQLAQQkcdmilknokmpokoppnhsqoxaxhhqaaaofsj", "sqlens": [3, 4, 3, 3, 3, 3, 4, 3, 4, 4, 3, 3, 4, 4, 3, 4, 3], "name": "HW_5.4894615593717106 #7361", "flat": false}
+{"isosig": "qvLLQvLPwQQkceefgjinlponpoopnvncxxanhxaqnaqaav", "sqlens": [3, 3, 4, 4, 3, 3, 3, 4, 3, 3, 4, 4, 3, 3, 4, 3, 4], "name": "HW_4.4646589115486808 #2227", "flat": false}
+{"isosig": "oLLLwwzQQPcbedgfjijjklmmnnhhshjhxxjoojohj", "sqlens": [3, 4, 3, 4, 3, 3, 3, 4, 3, 4, 3, 3, 4, 3, 4], "name": "HW_3.1271430442875258 #327", "flat": false}
+{"isosig": "oLLvAvQMQPcbeghjljkmkllnnnhhhaxxxqhxqhaqx", "sqlens": [3, 4, 3, 4, 3, 3, 3, 3, 4, 4, 3, 4, 4, 3, 4], "name": "HW_3.6638623767088761 #747", "flat": false}
+{"isosig": "qLvPvLLPPQQkafejmlmmnoplpnpnojqxaqjjjfjhoafhsj", "sqlens": [3, 4, 3, 3, 4, 3, 3, 3, 4, 3, 4, 4, 3, 3, 4, 3, 4], "name": "HW_5.3724557933115821 #6559", "flat": false}
+{"isosig": "qLLvLLPwQMQkacjhiijlknmpmooopnkaaaaxvckvxkaaqk", "sqlens": [3, 4, 3, 3, 3, 4, 4, 3, 4, 3, 3, 3, 3, 4, 4, 3, 4], "name": "HW_5.4329955889794865 #6993", "flat": false}
+{"isosig": "qLLvLzMPMMQkcdikkijmjlopnnnpphsjqqjjxoahxjjsxa", "sqlens": [3, 4, 3, 3, 3, 3, 4, 3, 4, 4, 3, 4, 3, 4, 3, 3, 4], "name": "HW_4.7659399179004890 #3365", "flat": false}
+{"isosig": "qLLLwPzLPPQkcegfjikjlonnmppophqhaqvqxanvcvhqca", "sqlens": [3, 3, 4, 4, 3, 3, 4, 3, 4, 3, 3, 3, 4, 4, 3, 4, 3], "name": "HW_4.7659399179004890 #3365", "flat": false}
+{"isosig": "qLvvLMwPPQQkcehhimjkonnloopppqqjfjqjfhahaofjsj", "sqlens": [3, 4, 3, 3, 4, 3, 4, 3, 3, 4, 3, 3, 4, 3, 4, 3, 4], "name": "HW_4.8511707573327376 #3678", "flat": false}
+{"isosig": "pLLvALLMQPQbeghijknlmlolmoohhhafxqhxhsafjqx", "sqlens": [3, 4, 3, 4, 3, 3, 3, 3, 4, 4, 3, 4, 3, 4, 4, 3], "name": "HW_4.4646589115486808 #2234", "flat": false}
+{"isosig": "oLLvALLMQQcbeghjllnlmknmnmhhxaaaqxhxajjoo", "sqlens": [3, 4, 3, 4, 3, 3, 3, 3, 4, 3, 4, 4, 3, 4, 3], "name": "HW_4.2421831324961747 #1665", "flat": false}
+{"isosig": "pLLvvMQwQPQacihjiiknlmoonnonkaaaxxxxnkxxqhx", "sqlens": [3, 4, 3, 3, 3, 4, 4, 3, 4, 3, 3, 4, 4, 4, 3, 3], "name": "HW_4.2421831324961747 #1665", "flat": false}
+{"isosig": "pLLvvLPAQQQachilkmollomknnonkaaaxxxvcxnnkka", "sqlens": [3, 4, 3, 3, 3, 4, 4, 3, 4, 3, 3, 4, 3, 4, 4, 3], "name": "HW_4.4229823353031528 #2106", "flat": false}
+{"isosig": "rLLvALLzQPAQcbeghjlknmllomoppqqhhhaaaxhaqojjfxxfj", "sqlens": [3, 4, 3, 4, 3, 3, 3, 3, 4, 3, 4, 4, 4, 3, 3, 4, 3, 4], "name": "HW_4.4646589115486808 #2231", "flat": false}
+{"isosig": "pLLvLvPQQAQbefmmkkjjlnnloooxxxaqhxfohxhxxxx", "sqlens": [3, 4, 3, 3, 4, 3, 3, 3, 4, 3, 4, 3, 4, 3, 4, 4], "name": "HW_4.7517019655178995 #3288", "flat": false}
+{"isosig": "nLLvQLAwQkbeghffijkmlmmlxxaahjxxhaxxqj", "sqlens": [3, 4, 3, 3, 4, 3, 3, 3, 4, 3, 4, 4, 4, 3], "name": "HW_3.0448248192289609 #273", "flat": false}
+{"isosig": "qLLvvvQQMPQkcdmkklnlnonploomphsxhaxhxaaaxhhojj", "sqlens": [3, 4, 3, 3, 3, 3, 4, 3, 4, 4, 3, 3, 4, 4, 3, 4, 3], "name": "HW_4.9999160678773662 #4371", "flat": false}
+{"isosig": "pLLvALLQAPQbeghjllhlmknooonhhhxaaqjxhahxaqs", "sqlens": [3, 4, 3, 4, 3, 3, 3, 3, 4, 4, 4, 3, 4, 3, 4, 3], "name": "HW_4.2115507324894157 #1583", "flat": false}
+{"isosig": "rLLvvMLAQMQMcacihnkjnmonpoopmqqnkaaaxxnkqnaaaqknk", "sqlens": [3, 4, 3, 3, 3, 4, 4, 3, 4, 3, 3, 4, 3, 3, 3, 4, 4, 4], "name": "HW_5.5636678247921596 #7829", "flat": false}
+{"isosig": "mLLvQLMAQbeghfijkijlllhhaaaaahqqaqx", "sqlens": [3, 4, 3, 4, 3, 3, 3, 3, 4, 3, 4, 4, 4], "name": "HW_2.6667447834490598 #171", "flat": false}
+{"isosig": "rLLvwMwzMMQQccdefkjmjoopnqnpqpqhsqjhahqhjfoxffhja", "sqlens": [3, 4, 3, 3, 3, 3, 4, 4, 4, 3, 3, 3, 4, 3, 4, 3, 3, 4], "name": "HW_5.6703599035123356 #8514", "flat": false}

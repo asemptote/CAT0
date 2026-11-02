@@ -1,0 +1,6 @@
+examples_1 #0: brute 168, vlink 168, missed by vlink 0, not confirmed 0
+examples_1 #5: brute 280, vlink 280, missed by vlink 0, not confirmed 0
+examples_3_disphenoid #8: brute 252, vlink 252, missed by vlink 0, not confirmed 0
+examples_3_disphenoid #14: brute 308, vlink 308, missed by vlink 0, not confirmed 0
+hyperbolic_candidate #0: brute 396, vlink 396, missed by vlink 0, not confirmed 0
+COMPLETE

@@ -1,0 +1,53 @@
+#I  packagemanager package is not available. Check that the name is correct
+#I  and it is present in one of the GAP root directories (see '??RootPaths')
+Syntax warning: Unbound global variable in cat.g:1638
+        L:=[op(L),[i,j]];
+            ^^
+------------------
+cat0.g Version 0.7
+------------------
+=== disphenoid (coxeter shape [4,3,3,3,3,4]) ===
+
+ Number of Tetrahedra created: 1
+ Number of Oriented Tetrahedra: 3
+ Number of Faces up to isometry: 3
+ Primes whose roots are needed = [ 2, 3 ]
+
+
+Results 
+  tested  = 47 galleries
+   time   = 15 milliseconds
+
+  moebius = 1
+  vertex  = 1
+
+To see the actual lists type:
+  mGalleries;
+  vGalleries;
+
+DISPHENOID vGalleries: 1  mGalleries: 1
+vGalleries := [ [ -1, 3 ] ];
+mGalleries := [ [ -3, -1 ] ];
+=== cube orthoscheme [1,2,3,1,2,1] ===
+
+ Number of Tetrahedra created: 1
+ Number of Oriented Tetrahedra: 12
+ Number of Faces up to isometry: 9
+ Primes whose roots are needed = [ 2, 3 ]
+
+
+Results 
+  tested  = 1059 galleries
+   time   = 337 milliseconds
+
+  moebius = 1
+  vertex  = 6
+
+To see the actual lists type:
+  mGalleries;
+  vGalleries;
+
+CUBE vGalleries: 6  mGalleries: 1
+vGalleries := [ [ -12, 9 ], [ -11, 7 ], [ -6, 1, 2 ], [ -4, 2 ], 
+  [ -4, 2, 1 ], [ -3, 5 ] ];
+mGalleries := [ [ -11, 7 ] ];

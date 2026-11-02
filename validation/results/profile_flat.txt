@@ -1,0 +1,92 @@
+{'result': True}
+Tue Oct 20 10:17:24 2026    validation/results/profile_flat.prof
+
+         2227072300 function calls (2097483423 primitive calls) in 1073.667 seconds
+
+   Ordered by: internal time
+   List reduced from 1032 to 30 due to restriction <30>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+124981031/124952407  142.775    0.000  345.287    0.000 /import/silo3/wardak/cat0-vertex-link/CAT0/constructible.py:118(__init__)
+537366675   98.361    0.000  157.385    0.000 {built-in method builtins.isinstance}
+ 80569140   92.695    0.000  154.827    0.000 /suphys/wardak/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/fractions.py:186(__new__)
+70365228/23408178   80.433    0.000  596.944    0.000 /import/silo3/wardak/cat0-vertex-link/CAT0/constructible.py:257(__mul__)
+ 70434243   43.274    0.000   56.288    0.000 /suphys/wardak/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/fractions.py:317(_from_coprime_ints)
+ 36770682   39.426    0.000   81.095    0.000 /suphys/wardak/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/fractions.py:742(_mul)
+ 12779772   38.125    0.000   67.370    0.000 /import/silo3/wardak/cat0-vertex-link/CAT0/constructible.py:45(isqrt)
+41936595/22237791   37.132    0.000  493.891    0.000 /import/silo3/wardak/cat0-vertex-link/CAT0/constructible.py:220(__add__)
+109425023   32.366    0.000   59.024    0.000 <frozen abc>:117(__instancecheck__)
+87898986/87897642   31.892    0.000   44.170    0.000 /suphys/wardak/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/fractions.py:912(__eq__)
+ 44438638   31.877    0.000  145.819    0.000 /suphys/wardak/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/fractions.py:613(forward)
+9561090/3711048   30.606    0.000  544.073    0.000 /import/silo3/wardak/cat0-vertex-link/CAT0/constructible.py:518(_try_sqrt)
+151003791/151003604   28.249    0.000   28.253    0.000 {built-in method __new__ of type object at 0x14950d0}
+31322602/8991902   27.304    0.000  111.170    0.000 /import/silo3/wardak/cat0-vertex-link/CAT0/constructible.py:503(lift_rational_field)
+109425023   26.658    0.000   26.658    0.000 {built-in method _abc._abc_instancecheck}
+18534031/11801369   19.274    0.000   71.148    0.000 /import/silo3/wardak/cat0-vertex-link/CAT0/constructible.py:217(__neg__)
+111445460   19.259    0.000   19.259    0.000 {built-in method math.gcd}
+  7241414   17.576    0.000  116.062    0.000 /import/silo3/wardak/cat0-vertex-link/CAT0/constructible.py:91(fsqrt)
+21737841/11624329   16.034    0.000   97.375    0.000 /import/silo3/wardak/cat0-vertex-link/CAT0/constructible.py:295(_sign)
+ 22639160   14.618    0.000   39.274    0.000 /suphys/wardak/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/fractions.py:933(_richcmp)
+ 83348858   14.045    0.000   14.045    0.000 {built-in method builtins.divmod}
+ 12030322   13.598    0.000   26.923    0.000 /suphys/wardak/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/fractions.py:710(_add)
+  8717342   11.622    0.000   47.964    0.000 /suphys/wardak/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/fractions.py:627(reverse)
+5607520/2862664   11.326    0.000  130.680    0.000 /import/silo3/wardak/cat0-vertex-link/CAT0/constructible.py:247(inverse)
+12438823/10276637   11.139    0.000  387.636    0.000 /import/silo3/wardak/cat0-vertex-link/CAT0/constructible.py:238(__sub__)
+ 53290425    9.943    0.000    9.943    0.000 {method 'get' of 'dict' objects}
+ 17395675    8.676    0.000   22.520    0.000 /suphys/wardak/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/fractions.py:851(__neg__)
+7713039/4176632    7.960    0.000  266.901    0.000 /import/silo3/wardak/cat0-vertex-link/CAT0/constructible.py:331(__eq__)
+ 53424264    7.186    0.000    7.186    0.000 /suphys/wardak/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/fractions.py:397(numerator)
+5608792/2120544    6.708    0.000  286.255    0.000 /import/silo3/wardak/cat0-vertex-link/CAT0/constructible.py:280(__truediv__)
+
+
+Tue Oct 20 10:17:24 2026    validation/results/profile_flat.prof
+
+         2227072300 function calls (2097483423 primitive calls) in 1073.667 seconds
+
+   Ordered by: cumulative time
+   List reduced from 1032 to 40 due to restriction <40>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+ 7228/264    1.498    0.000  706.378    2.676 /import/silo3/wardak/cat0-vertex-link/CAT0/gallery.py:473(find_necklaces)
+3388578/3182988    6.604    0.000  657.025    0.000 /import/silo3/wardak/cat0-vertex-link/CAT0/constructible.py:441(join)
+70365228/23408178   80.433    0.000  596.944    0.000 /import/silo3/wardak/cat0-vertex-link/CAT0/constructible.py:257(__mul__)
+9561090/3711048   30.606    0.000  544.073    0.000 /import/silo3/wardak/cat0-vertex-link/CAT0/constructible.py:518(_try_sqrt)
+4218970/3388578    4.752    0.000  542.769    0.000 /import/silo3/wardak/cat0-vertex-link/CAT0/constructible.py:453(join_fields)
+41936595/22237791   37.132    0.000  493.891    0.000 /import/silo3/wardak/cat0-vertex-link/CAT0/constructible.py:220(__add__)
+12438823/10276637   11.139    0.000  387.636    0.000 /import/silo3/wardak/cat0-vertex-link/CAT0/constructible.py:238(__sub__)
+       24    0.005    0.000  366.905   15.288 /import/silo3/wardak/cat0-vertex-link/CAT0/gallery.py:434(build_galleries)
+   696/72    0.018    0.000  364.838    5.067 /import/silo3/wardak/cat0-vertex-link/CAT0/gallery.py:357(find_thickbeads)
+   116124    0.165    0.000  360.559    0.003 /import/silo3/wardak/cat0-vertex-link/CAT0/gallery.py:562(<genexpr>)
+205792/77416    1.584    0.000  360.394    0.005 /import/silo3/wardak/cat0-vertex-link/CAT0/gallery.py:395(geodesicAngle)
+124981031/124952407  142.775    0.000  345.287    0.000 /import/silo3/wardak/cat0-vertex-link/CAT0/constructible.py:118(__init__)
+   422384    1.531    0.000  335.217    0.001 /import/silo3/wardak/cat0-vertex-link/CAT0/constrsphtrig.py:228(__add__)
+   537812    2.769    0.000  321.524    0.001 /import/silo3/wardak/cat0-vertex-link/CAT0/constrsphtrig.py:138(__add__)
+5608792/2120544    6.708    0.000  286.255    0.000 /import/silo3/wardak/cat0-vertex-link/CAT0/constructible.py:280(__truediv__)
+      312    0.033    0.000  270.401    0.867 /import/silo3/wardak/cat0-vertex-link/CAT0/gallery.py:256(tobead)
+7713039/4176632    7.960    0.000  266.901    0.000 /import/silo3/wardak/cat0-vertex-link/CAT0/constructible.py:331(__eq__)
+      384    0.020    0.000  238.118    0.620 /import/silo3/wardak/cat0-vertex-link/CAT0/constrsphtrig.py:377(linear)
+  1405505    4.125    0.000  170.111    0.000 /import/silo3/wardak/cat0-vertex-link/CAT0/constrsphtrig.py:97(__init__)
+537366675   98.361    0.000  157.385    0.000 {built-in method builtins.isinstance}
+ 80569140   92.695    0.000  154.827    0.000 /suphys/wardak/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/fractions.py:186(__new__)
+ 44438638   31.877    0.000  145.819    0.000 /suphys/wardak/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/fractions.py:613(forward)
+5607520/2862664   11.326    0.000  130.680    0.000 /import/silo3/wardak/cat0-vertex-link/CAT0/constructible.py:247(inverse)
+     1044    0.005    0.000  125.067    0.120 /import/silo3/wardak/cat0-vertex-link/CAT0/constrsphtrig.py:430(<genexpr>)
+    14796    0.047    0.000  123.826    0.008 {built-in method builtins.sum}
+  1400932    3.186    0.000  119.589    0.000 /import/silo3/wardak/cat0-vertex-link/CAT0/constrsphtrig.py:107(sin)
+  7241414   17.576    0.000  116.062    0.000 /import/silo3/wardak/cat0-vertex-link/CAT0/constructible.py:91(fsqrt)
+31322602/8991902   27.304    0.000  111.170    0.000 /import/silo3/wardak/cat0-vertex-link/CAT0/constructible.py:503(lift_rational_field)
+21737841/11624329   16.034    0.000   97.375    0.000 /import/silo3/wardak/cat0-vertex-link/CAT0/constructible.py:295(_sign)
+  5373688    2.931    0.000   91.062    0.000 /import/silo3/wardak/cat0-vertex-link/CAT0/constructible.py:479(f2)
+  2817804    3.053    0.000   90.113    0.000 /import/silo3/wardak/cat0-vertex-link/CAT0/constrsphtrig.py:68(sqrt)
+   936907    1.212    0.000   89.381    0.000 /import/silo3/wardak/cat0-vertex-link/CAT0/constrsphtrig.py:207(__init__)
+    10824    0.211    0.000   87.225    0.008 /import/silo3/wardak/cat0-vertex-link/CAT0/constrsphtrig.py:342(rotate)
+  1075624    0.548    0.000   86.775    0.000 /import/silo3/wardak/cat0-vertex-link/CAT0/constrsphtrig.py:113(cos_sin)
+ 36770682   39.426    0.000   81.095    0.000 /suphys/wardak/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/fractions.py:742(_mul)
+   821662    0.499    0.000   75.738    0.000 {built-in method builtins.abs}
+  2880656    5.815    0.000   73.164    0.000 /import/silo3/wardak/cat0-vertex-link/CAT0/constructible.py:556(sqrt)
+18534031/11801369   19.274    0.000   71.148    0.000 /import/silo3/wardak/cat0-vertex-link/CAT0/constructible.py:217(__neg__)
+   116124    0.251    0.000   71.070    0.001 /import/silo3/wardak/cat0-vertex-link/CAT0/gallery.py:563(<genexpr>)
+   666830    0.632    0.000   70.607    0.000 /import/silo3/wardak/cat0-vertex-link/CAT0/constrsphtrig.py:168(__abs__)
+
+
+

@@ -1,0 +1,3 @@
+{"isosig": "gLLPQbefefefhhxxqxh", "name": "SFS [S2: (2,1) (4,1) (4,-3)]", "from_isosig": "gvLQQcdefeffjwnpjhe", "geometry": "flat", "shape": "disphenoid", "sqlens": [3, 4, 3, 4, 3, 3, 4], "flat": true, "expected": true, "n_tet": 6, "seed": 100114}
+{"isosig": "gLLPQaceedffnkxknnn", "name": "SFS [S2: (3,1) (3,1) (3,-2)]", "from_isosig": "gLLPQaceedffnkxknnn", "geometry": "flat", "shape": "cube", "sqlens": [1, 2, 3, 1, 1, 2, 2], "flat": true, "expected": true, "n_tet": 6, "seed": 100116}
+{"isosig": "gLLPQaceedffnkxknnn", "name": "SFS [S2: (3,1) (3,1) (3,-2)]", "from_isosig": "gLLPQaceedffnkxknnn", "geometry": "flat", "shape": "disphenoid", "sqlens": [3, 4, 3, 3, 3, 4, 4], "flat": true, "expected": true, "n_tet": 6, "seed": 100116}
